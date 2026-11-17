@@ -19,28 +19,12 @@ Each skill's `SKILL.md` lists its own setup and environment variables.
 
 ## Install
 
-**Claude Code (plugin marketplace)**
-
-Install any plugin in one step (Claude Code 2.1.275+):
-
-```
-/plugin install edge-research --marketplace lokki007/ian-skills
-/plugin install keyword --marketplace lokki007/ian-skills
-/plugin install download --marketplace lokki007/ian-skills
-/plugin install pareto --marketplace lokki007/ian-skills
-/plugin install spielberg-for-suits --marketplace lokki007/ian-skills
-```
-
-Or add the marketplace once with `/plugin marketplace add lokki007/ian-skills`, then `/plugin install <name>@ian-skills`.
-
-**Any agent (skills CLI)**
+Copy a folder from `skills/` into `~/.claude/skills/` (Claude Code) or `~/.agents/skills/` (Codex and others). Or:
 
 ```
 npx skills add lokki007/ian-skills
 ```
 
-**By hand:** copy a folder from `skills/` into `~/.claude/skills/` (Claude Code) or `~/.agents/skills/` (Codex and others).
-
 ## License
 
-MIT, see [LICENSE](LICENSE). A few bundled third-party files keep their own licenses: GSAP in `spielberg-for-suits` ([notices](skills/spielberg-for-suits/THIRD_PARTY_NOTICES.md)) and the wordfreq data in `keyword` ([notice](skills/keyword/NOTICE.md)).
+MIT, see [LICENSE](LICENSE). A few bundled third-party files keep their own licenses: GSAP in `spielberg-for-suits` and the wordfreq data in `keyword`.
