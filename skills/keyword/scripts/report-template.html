@@ -1,0 +1,376 @@
+<meta charset="utf-8">
+<title>{{TITLE}}</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a survey sheet. Verdict and numbers first, then the map of the field, then the evidence, then the raw list. */
+:root {
+  --bg: #f3f4f7; --surface: #ffffff; --sunk: #e9ebf1; --line: #d9dce5; --fg: #141821; --muted: #5d6475; --faint: #8a90a0;
+  --accent: #3446d4; --accent-soft: #e3e6fb; --pain: #d2541a; --pain-soft: #fbe7dc; --good: #0e8f6e; --good-soft: #d9f2ea; --warn: #b7791f;
+  --i-buy: #0e8f6e; --i-compare: #c27a10; --i-learn: #3446d4; --i-site: #7a6fc2; --i-other: #a2a8b6;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d1016; --surface: #151922; --sunk: #1c212c; --line: #2a303d; --fg: #e8eaf0; --muted: #a0a7b8; --faint: #6f7688;
+  --accent: #8c99ff; --accent-soft: #232a52; --pain: #ff8a52; --pain-soft: #3a2218; --good: #3fd0a6; --good-soft: #13342b; --warn: #e6b04f;
+  --i-buy: #3fd0a6; --i-compare: #f0b04a; --i-learn: #8c99ff; --i-site: #b3a8ff; --i-other: #6f7688; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0d1016; --surface: #151922; --sunk: #1c212c; --line: #2a303d; --fg: #e8eaf0; --muted: #a0a7b8; --faint: #6f7688;
+  --accent: #8c99ff; --accent-soft: #232a52; --pain: #ff8a52; --pain-soft: #3a2218; --good: #3fd0a6; --good-soft: #13342b; --warn: #e6b04f;
+  --i-buy: #3fd0a6; --i-compare: #f0b04a; --i-learn: #8c99ff; --i-site: #b3a8ff; --i-other: #6f7688; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--body); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface) }
+a { color: var(--accent) }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line) }
+header.top .wrap { display: flex; gap: 18px; align-items: center; padding-block: 10px }
+.brand { font: 700 15px var(--display); white-space: nowrap }
+.brand small { font: 500 12px var(--mono); color: var(--faint); margin-left: 6px }
+nav.jump { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; min-width: 0 }
+nav.jump a { font-size: 13px; color: var(--muted); text-decoration: none; padding: 4px 10px; border-radius: 99px; white-space: nowrap }
+nav.jump a:hover, nav.jump a:focus-visible { background: var(--sunk); color: var(--fg); outline: none }
+main { display: grid; grid-template-columns: minmax(0, 1fr); gap: 56px; padding-block: 36px 80px }
+main > section { min-width: 0 }
+.hero { display: grid; gap: 18px }
+.eyebrow { font: 500 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted) }
+h1 { font: 800 clamp(38px, 6vw, 72px)/1 var(--display); letter-spacing: -.025em; margin: 0; text-wrap: balance }
+h1 .seedlist { color: var(--accent) }
+h2 { font: 700 28px/1.15 var(--display); letter-spacing: -.01em; margin: 0; text-wrap: balance }
+h3 { font: 700 18px/1.25 var(--display); margin: 0 }
+.lede { font-size: 18px; max-width: 70ch; color: var(--fg); margin: 0 }
+.verdict { display: inline-flex; gap: 10px; align-items: center; padding: 8px 14px; border-radius: 99px; background: var(--accent-soft); color: var(--fg); font-weight: 600; width: fit-content; max-width: 100% }
+.verdict b { font: 700 13px var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--accent) }
+.sec-head { display: grid; gap: 6px; margin-bottom: 18px }
+.sec-head p { margin: 0; color: var(--muted); max-width: 72ch }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden }
+.kpi { background: var(--surface); padding: 16px 18px; display: grid; gap: 2px }
+.kpi .v { font: 700 30px/1.1 var(--display); font-variant-numeric: tabular-nums }
+.kpi .l { font-size: 13px; color: var(--muted) }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 20px }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 20px }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 16px }
+.map { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 20px; align-items: start }
+@media (max-width: 820px) { .map { grid-template-columns: minmax(0, 1fr) } }
+.chart { width: 100%; height: auto; display: block; overflow: visible }
+.chart text { fill: var(--muted); font: 11px var(--mono) }
+.chart .lbl { fill: var(--fg); font: 600 11.5px var(--body) }
+.chart .grid { stroke: var(--line); stroke-width: 1 }
+.chart .zone { fill: var(--good-soft) }
+.chart circle { stroke: var(--surface); stroke-width: 1.2; cursor: pointer; transition: opacity .15s }
+.chart circle:hover, .chart circle.on { stroke: var(--fg); stroke-width: 2 }
+.readout { display: grid; gap: 10px; font-size: 14px }
+.readout .k { font: 700 20px/1.2 var(--display) }
+.readout dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 }
+.readout dt { color: var(--muted) } .readout dd { margin: 0; font-family: var(--mono); font-variant-numeric: tabular-nums }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12.5px; color: var(--muted) }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: grid; gap: 12px; align-content: start; min-width: 0 }
+.card .row { display: flex; justify-content: space-between; gap: 12px; align-items: baseline }
+.score { font: 700 26px var(--display); font-variant-numeric: tabular-nums; color: var(--accent) }
+.meter { height: 6px; background: var(--sunk); border-radius: 99px; overflow: hidden }
+.meter > span { display: block; height: 100%; background: var(--accent); border-radius: 99px }
+.tags { display: flex; flex-wrap: wrap; gap: 6px }
+.tag { font-size: 12.5px; padding: 3px 9px; border-radius: 99px; background: var(--sunk); color: var(--fg); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis }
+.tag.small { font-size: 11.5px; padding: 2px 8px }
+.pill { font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: .05em; padding: 3px 8px; border-radius: 6px; white-space: nowrap }
+.p-high { background: var(--good-soft); color: var(--good) } .p-med { background: var(--accent-soft); color: var(--accent) } .p-low { background: var(--sunk); color: var(--muted) }
+.p-pain { background: var(--pain-soft); color: var(--pain) }
+.muted { color: var(--muted) } .mono { font-family: var(--mono) }
+.opps { display: grid; gap: 10px; counter-reset: o }
+.opp { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 14px; align-items: start; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px }
+.opp::before { counter-increment: o; content: counter(o); font: 800 22px var(--display); color: var(--faint) }
+.opp p { margin: 4px 0 8px; color: var(--muted) }
+.opp .side { display: grid; gap: 6px; justify-items: end }
+@media (max-width: 560px) { .opp { grid-template-columns: 28px minmax(0, 1fr) } .opp .side { grid-column: 2; justify-items: start; grid-auto-flow: column } }
+.pain { border-left: 3px solid var(--pain) }
+.sev { display: inline-flex; gap: 3px } .sev i { width: 8px; height: 8px; border-radius: 50%; background: var(--sunk) } .sev i.on { background: var(--pain) }
+blockquote { margin: 0; padding: 8px 12px; background: var(--sunk); border-radius: 8px; font-size: 14px }
+blockquote a { font-size: 12px; display: block; margin-top: 4px; overflow-wrap: anywhere }
+.idea { font-size: 14px } .idea b { color: var(--good) }
+.bars { display: grid; gap: 7px }
+.bar { display: grid; grid-template-columns: minmax(90px, 160px) minmax(0, 1fr) 42px; gap: 10px; align-items: center; font-size: 13.5px }
+.bar .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.bar .b { height: 10px; background: var(--sunk); border-radius: 99px; overflow: hidden } .bar .b span { display: block; height: 100%; border-radius: 99px; background: var(--accent) }
+.bar .n { font: 12px var(--mono); color: var(--muted); text-align: right; font-variant-numeric: tabular-nums }
+.qtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px }
+button { font: inherit; color: inherit }
+.qtabs button, .btn { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 5px 12px; cursor: pointer; font-size: 13px }
+.qtabs button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg) }
+.qtabs button:focus-visible, .btn:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.qlist { columns: 2 300px; column-gap: 28px; margin: 0; padding: 0; list-style: none }
+.qlist li { break-inside: avoid; padding: 6px 0; border-bottom: 1px dashed var(--line); display: flex; justify-content: space-between; gap: 10px; font-size: 14.5px }
+.qlist li span:last-child { font: 11px var(--mono); color: var(--faint); white-space: nowrap }
+.tablebox { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface) }
+table { border-collapse: collapse; width: 100%; font-size: 14px }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); white-space: nowrap }
+th { font: 500 12px var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .05em; position: sticky; top: 0; background: var(--surface); cursor: pointer; user-select: none }
+th[aria-sort] { color: var(--fg) }
+td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right }
+td.kw { white-space: normal; min-width: 220px }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; align-items: center }
+input[type=search], select { font: inherit; font-size: 14px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--fg); min-width: 0 }
+input[type=search] { flex: 1 1 220px }
+.spark { width: 70px; height: 20px; vertical-align: middle }
+.spark path { fill: none; stroke: var(--accent); stroke-width: 1.5 }
+.note { font-size: 13px; color: var(--muted); padding: 10px 14px; border: 1px dashed var(--line); border-radius: 8px }
+.list { margin: 0; padding-left: 18px; display: grid; gap: 6px }
+footer { color: var(--faint); font-size: 13px; border-top: 1px solid var(--line); padding-block: 20px 40px }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+</style>
+
+<header class="top"><div class="wrap">
+  <div class="brand">Keyword field<small id="mk"></small></div>
+  <nav class="jump" id="jump" aria-label="Sections"></nav>
+</div></header>
+
+<div class="wrap"><main id="main"></main>
+<footer id="foot"></footer></div>
+
+<script type="application/json" id="data">{{DATA}}</script>
+<script>
+(() => {
+const D = JSON.parse(document.getElementById('data').textContent);
+const A = D.analysis || {};
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const n0 = (v) => (v == null ? '–' : Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 }));
+const kfmt = (v) => (v == null ? '–' : v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e4 ? Math.round(v / 1e3) + 'k' : v >= 1e3 ? (v / 1e3).toFixed(1) + 'k' : String(Math.round(v)));
+const money = (v) => (v == null ? '–' : '$' + (v >= 100 ? Math.round(v) : v.toFixed(2)));
+const INTENT = { transactional: ['buy', 'var(--i-buy)'], commercial: ['compare', 'var(--i-compare)'], informational: ['learn', 'var(--i-learn)'], navigational: ['site', 'var(--i-site)'], other: ['other', 'var(--i-other)'] };
+const main = $('#main'), sections = [];
+function section(id, title, sub, html) {
+  if (!html) return null;
+  const s = document.createElement('section'); s.id = id;
+  s.innerHTML = `<div class="sec-head"><h2>${esc(title)}</h2>${sub ? `<p>${sub}</p>` : ''}</div>${html}`;
+  main.appendChild(s); sections.push([id, title]); return s;
+}
+const rows = D.rows, hasM = rows.filter((r) => r.v != null);
+const seedTitle = D.seeds.join(' · ');
+$('#mk').textContent = `${(D.market?.gl || 'us').toUpperCase()} · ${new Date(D.generatedAt).toISOString().slice(0, 10)}`;
+
+// ---------- hero ----------
+const totalVol = hasM.reduce((s, r) => s + (r.v || 0), 0);
+const cpcs = hasM.filter((r) => r.cpc > 0 && r.v > 0);
+const avgCpc = cpcs.length ? cpcs.reduce((s, r) => s + r.cpc * r.v, 0) / cpcs.reduce((s, r) => s + r.v, 0) : null;
+const qCount = Object.values(D.facets.questions || {}).reduce((s, a) => s + a.length, 0);
+const kpis = [
+  [n0(D.stats.keywords), 'keywords found'],
+  [n0((A.subniches || D.clusters).length), 'sub-niches'],
+  [n0(qCount), 'questions asked'],
+  [n0((A.pains || []).length || D.facets.pains.length), A.pains?.length ? 'pains with evidence' : 'pain searches'],
+  ...(hasM.length ? [[kfmt(totalVol), `searches/mo across ${hasM.length} measured`], [money(avgCpc), 'avg CPC, volume-weighted']] : [[n0(D.stats.requests), 'free suggest lookups']]),
+];
+const v = A.verdict;
+main.insertAdjacentHTML('beforeend', `<section class="hero" id="top">
+  <div class="eyebrow">Keyword market research · ${esc(D.engine?.sources?.length || 0)} engines${hasM.length ? ' · Google Ads-style metrics' : ''}</div>
+  <h1><span class="seedlist">${esc(seedTitle)}</span></h1>
+  ${A.headline ? `<p class="lede"><strong>${esc(A.headline)}</strong></p>` : ''}
+  ${v ? `<div class="verdict"><b>${esc(v.label)}</b><span>${esc(v.reason)}</span></div>` : ''}
+  ${A.summary ? `<p class="lede">${esc(A.summary)}</p>` : ''}
+  <div class="kpis">${kpis.map(([a, b]) => `<div class="kpi"><span class="v">${a}</span><span class="l">${esc(b)}</span></div>`).join('')}</div>
+</section>`);
+
+// ---------- opportunity map ----------
+(() => {
+  const W = 760, Hh = 440, P = { l: 52, r: 24, t: 20, b: 44 };
+  let pts, xl, yl, mode;
+  if (hasM.filter((r) => r.v > 0 && r.kd != null).length >= 8) {
+    mode = 'kw';
+    pts = hasM.filter((r) => r.v > 0 && r.kd != null).map((r) => ({ label: r.k, x: Math.log10(r.v), y: r.kd, r: 4 + Math.sqrt(Math.max(0, r.cpc || 0)) * 3, c: (INTENT[r.i] || INTENT.other)[1], d: r }));
+    xl = 'monthly searches (log)'; yl = 'difficulty';
+  } else {
+    mode = 'cl';
+    const byC = new Map(); for (const r of rows) if (r.c) { const a = byC.get(r.c) || []; a.push(r); byC.set(r.c, a); }
+    pts = D.clusters.map((c) => { const m = byC.get(c.term) || []; const avg = m.length ? m.reduce((s, r) => s + r.s, 0) / m.length : 0; return { label: c.term, x: Math.log10(c.count + 1), y: avg, r: 5 + Math.sqrt(c.weight) * 1.6, c: 'var(--accent)', d: c }; });
+    xl = 'keywords in the sub-niche (log)'; yl = 'avg popularity';
+  }
+  if (!pts.length) return;
+  const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y);
+  const x0 = Math.floor(Math.min(...xs)), x1 = Math.ceil(Math.max(...xs) + 0.01);
+  const y0 = mode === 'kw' ? 0 : Math.floor(Math.min(...ys) / 100) * 100, y1 = mode === 'kw' ? 100 : Math.ceil(Math.max(...ys) / 100) * 100 || 100;
+  const X = (x) => P.l + ((x - x0) / (x1 - x0 || 1)) * (W - P.l - P.r);
+  // keyword mode: easy (low difficulty) at the top; cluster mode: popular at the top
+  const Y = mode === 'kw' ? (y) => P.t + (y / 100) * (Hh - P.t - P.b) : (y) => Hh - P.b - ((y - y0) / (y1 - y0 || 1)) * (Hh - P.t - P.b);
+  let g = '';
+  if (mode === 'kw') g += `<rect class="zone" x="${X((x0 + x1) / 2)}" y="${Y(0)}" width="${X(x1) - X((x0 + x1) / 2)}" height="${Y(35) - Y(0)}" rx="6"/>`;
+  for (let e = x0; e <= x1; e++) g += `<line class="grid" x1="${X(e)}" x2="${X(e)}" y1="${P.t}" y2="${Hh - P.b}"/><text x="${X(e)}" y="${Hh - P.b + 18}" text-anchor="middle">${mode === 'kw' ? kfmt(10 ** e) : kfmt(10 ** e)}</text>`;
+  const ysteps = 5; for (let i = 0; i <= ysteps; i++) { const yv = y0 + ((y1 - y0) * i) / ysteps; g += `<line class="grid" x1="${P.l}" x2="${W - P.r}" y1="${Y(yv)}" y2="${Y(yv)}"/><text x="${P.l - 8}" y="${Y(yv) + 4}" text-anchor="end">${Math.round(yv)}</text>`; }
+  g += `<text x="${(P.l + W - P.r) / 2}" y="${Hh - 6}" text-anchor="middle">${xl} →</text><text transform="translate(14 ${(P.t + Hh - P.b) / 2}) rotate(-90)" text-anchor="middle">${mode === 'kw' ? '↑ easier' : yl + ' →'}</text>`;
+  const order = pts.map((p, i) => i).sort((a, b) => pts[b].r - pts[a].r);
+  g += order.map((i) => { const p = pts[i]; return `<circle data-i="${i}" cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${p.r.toFixed(1)}" fill="${p.c}" fill-opacity=".72" tabindex="0"><title>${esc(p.label)}</title></circle>`; }).join('');
+  const lab = mode === 'kw' ? pts.map((p, i) => [i, (p.d.v * (p.d.cpc || 0.5)) / (10 + p.d.kd)]).sort((a, b) => b[1] - a[1]).slice(0, 9).map((a) => a[0]) : order.slice(0, 14);
+  const placed = [];
+  for (const i of lab) {
+    const p = pts[i]; let x = X(p.x) + p.r + 4, y = Y(p.y) + 4; const w = p.label.length * 6.4;
+    let anchor = 'start'; if (x + w > W - 4) { x = X(p.x) - p.r - 4; anchor = 'end'; }
+    const box = anchor === 'start' ? [x, y - 11, x + w, y + 3] : [x - w, y - 11, x, y + 3];
+    if (placed.some((b) => !(box[2] < b[0] || box[0] > b[2] || box[3] < b[1] || box[1] > b[3]))) continue;
+    placed.push(box); g += `<text class="lbl" x="${x}" y="${y}" text-anchor="${anchor}">${esc(p.label)}</text>`;
+  }
+  const legend = mode === 'kw'
+    ? `<div class="legend">${Object.values(INTENT).map(([n, c]) => `<span><i style="background:${c}"></i>${n}</span>`).join('')}<span>size = cost per click</span><span><i style="background:var(--good-soft);border-radius:3px"></i>sweet spot: demand, difficulty under 35</span></div>`
+    : `<div class="legend"><span>Bubble = a sub-niche Wordhoard found around the seed. Size = how strongly the engines suggest it. Volumes were not measured for this run.</span></div>`;
+  const s = section('map', mode === 'kw' ? 'Opportunity map' : 'Sub-niche map', mode === 'kw' ? 'Every measured keyword by demand and difficulty. The green corner has search volume and room to rank.' : 'Where the search suggestions cluster. Right means more distinct searches, higher means the engines push them harder.',
+    `<div class="panel map"><div style="min-width:0"><svg class="chart" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Opportunity map">${g}</svg>${legend}</div><div class="readout" id="readout"><span class="muted">Hover or tap a bubble.</span></div></div>`);
+  const ro = $('#readout');
+  const show = (i) => {
+    const p = pts[i]; s.querySelectorAll('circle.on').forEach((c) => c.classList.remove('on'));
+    s.querySelector(`circle[data-i="${i}"]`)?.classList.add('on');
+    if (mode === 'kw') { const r = p.d; ro.innerHTML = `<div class="k">${esc(r.k)}</div><dl><dt>searches/mo</dt><dd>${n0(r.v)}</dd><dt>difficulty</dt><dd>${n0(r.kd)}</dd><dt>CPC</dt><dd>${money(r.cpc)}</dd><dt>12-mo change</dt><dd>${r.chg == null ? '–' : (r.chg > 0 ? '+' : '') + r.chg + '%'}</dd><dt>intent</dt><dd>${(INTENT[r.i] || INTENT.other)[0]}</dd></dl>${r.ser?.length ? spark(r.ser, 220, 44) : ''}`; }
+    else { const c = p.d; ro.innerHTML = `<div class="k">${esc(c.term)}</div><dl><dt>keywords</dt><dd>${c.count}</dd><dt>strength</dt><dd>${c.weight}</dd></dl><div class="tags">${c.top.slice(0, 10).map((k) => `<span class="tag small">${esc(k)}</span>`).join('')}</div>`; }
+  };
+  s.querySelectorAll('circle').forEach((c) => { const i = +c.dataset.i; c.addEventListener('mouseenter', () => show(i)); c.addEventListener('focus', () => show(i)); c.addEventListener('click', () => show(i)); });
+  show(lab[0] ?? 0);
+})();
+function spark(series, w = 70, h = 20) {
+  const s = series.filter((x) => x != null); if (s.length < 2) return '';
+  const mx = Math.max(...s), mn = Math.min(...s);
+  const d = s.map((v, i) => `${i ? 'L' : 'M'}${((i / (s.length - 1)) * (w - 2) + 1).toFixed(1)} ${(h - 2 - ((v - mn) / (mx - mn || 1)) * (h - 4)).toFixed(1)}`).join(' ');
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" style="width:${w}px;height:${h}px"><path d="${d}"/></svg>`;
+}
+
+// ---------- sub-niches ----------
+(() => {
+  const byTerm = new Map(D.clusters.map((c) => [c.term, c]));
+  const vol = (kws) => kws.reduce((s, k) => s + (rows.find((r) => r.k === k)?.v || 0), 0);
+  let list = (A.subniches || []).map((s) => ({ ...s, cl: byTerm.get(s.term) }));
+  if (!list.length) { const mx = Math.max(1, ...D.clusters.map((c) => c.weight)); list = D.clusters.slice(0, 12).map((c) => ({ name: c.term, term: c.term, opportunity: Math.round((100 * c.weight) / mx), keywords: c.top, cl: c })); }
+  if (!list.length) return;
+  list.sort((a, b) => (b.opportunity ?? 0) - (a.opportunity ?? 0));
+  const lvl = (x, inv) => (x ? `<span class="pill p-${/high/i.test(x) ? (inv ? 'pain' : 'high') : /med/i.test(x) ? 'med' : (inv ? 'high' : 'low')}">${esc(x)}</span>` : '');
+  section('niches', 'Sub-niches', 'The pockets inside the topic, ranked by opportunity. Demand comes from search; competition from the results and the rival field.',
+    `<div class="grid3">${list.map((s) => { const kws = s.keywords?.length ? s.keywords : s.cl?.top || []; const v = vol(kws); return `<article class="card">
+      <div class="row"><h3>${esc(s.name)}</h3><span class="score">${s.opportunity ?? '–'}</span></div>
+      <div class="meter"><span style="width:${Math.max(0, Math.min(100, s.opportunity || 0))}%"></span></div>
+      ${s.demand || s.competition ? `<div class="tags">${s.demand ? `<span class="muted" style="font-size:12.5px">demand</span>${lvl(s.demand)}` : ''}${s.competition ? `<span class="muted" style="font-size:12.5px">competition</span>${lvl(s.competition, true)}` : ''}</div>` : ''}
+      ${s.angle ? `<p style="margin:0">${esc(s.angle)}</p>` : ''}
+      <div class="tags">${kws.slice(0, 8).map((k) => `<span class="tag small">${esc(k)}</span>`).join('')}</div>
+      <div class="muted mono" style="font-size:12px">${s.cl ? `${s.cl.count} keywords found` : ''}${v ? ` · ${kfmt(v)} searches/mo measured` : ''}</div>
+    </article>`; }).join('')}</div>`);
+})();
+
+// ---------- opportunities ----------
+if (A.opportunities?.length) {
+  const up = (x) => `<span class="pill p-${/high/i.test(x) ? 'high' : /med/i.test(x) ? 'med' : 'low'}">upside ${esc(x)}</span>`;
+  section('opps', 'Opportunities', 'What to build, write or sell, ranked. Each one names the searches that prove the demand.',
+    `<div class="opps">${A.opportunities.map((o) => `<article class="opp"><div style="min-width:0"><h3>${esc(o.title)}</h3><p>${esc(o.why)}</p><div class="tags">${(o.keywords || []).slice(0, 8).map((k) => `<span class="tag small">${esc(k)}</span>`).join('')}</div></div>
+      <div class="side">${o.type ? `<span class="pill p-low">${esc(o.type)}</span>` : ''}${o.upside ? up(o.upside) : ''}${o.effort ? `<span class="pill p-low">effort ${esc(o.effort)}</span>` : ''}</div></article>`).join('')}</div>`);
+}
+
+// ---------- pains ----------
+(() => {
+  const P = A.pains || [];
+  const searches = D.facets.pains.slice(0, 40);
+  if (!P.length && !searches.length) return;
+  const cards = P.map((p) => `<article class="card pain"><div class="row"><h3>${esc(p.pain)}</h3><span class="sev" title="severity ${p.severity}/5">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= (p.severity || 0) ? 'on' : ''}"></i>`).join('')}</span></div>
+    ${p.who ? `<div class="muted" style="font-size:13px">${esc(p.who)}</div>` : ''}
+    ${(p.evidence || []).slice(0, 3).map((e) => `<blockquote>“${esc(e.quote)}”${e.url ? `<a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.source || new URL(e.url).hostname)}</a>` : ''}</blockquote>`).join('')}
+    ${p.idea ? `<div class="idea"><b>Answer it:</b> ${esc(p.idea)}</div>` : ''}</article>`).join('');
+  section('pains', 'Pains', 'What hurts, in people’s own words, and the searches that carry the frustration.',
+    `${cards ? `<div class="grid3">${cards}</div>` : ''}${searches.length ? `<div class="panel" style="margin-top:16px"><div class="eyebrow" style="margin-bottom:10px">Pain-shaped searches</div><div class="tags">${searches.map((r) => `<span class="tag" style="background:var(--pain-soft)">${esc(r.k)}</span>`).join('')}</div></div>` : ''}`);
+})();
+
+// ---------- questions ----------
+(() => {
+  const Q = D.facets.questions || {}; const keys = Object.keys(Q).filter((k) => Q[k].length).sort((a, b) => Q[b].length - Q[a].length);
+  if (!keys.length) return;
+  const s = section('questions', 'Questions people ask', 'Straight from autocomplete. Each one is a page, a video or an FAQ entry waiting to be written.',
+    `<div class="panel"><div class="qtabs" role="group" aria-label="Question word">${keys.map((k, i) => `<button type="button" id="q-${esc(k)}" data-k="${esc(k)}" aria-pressed="${i === 0}">${esc(k)} <span class="muted mono">${Q[k].length}</span></button>`).join('')}</div><ul class="qlist" id="qlist"></ul></div>`);
+  const draw = (k) => { $('#qlist').innerHTML = Q[k].map((r) => `<li><span>${esc(r.k)}</span><span>${r.score}</span></li>`).join(''); s.querySelectorAll('.qtabs button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.k === k))); };
+  s.querySelectorAll('.qtabs button').forEach((b) => b.addEventListener('click', () => draw(b.dataset.k)));
+  draw(keys[0]);
+})();
+
+// ---------- who and how ----------
+(() => {
+  const bars = (list, color) => { const mx = Math.max(1, ...list.map((x) => x.score || x.count)); return `<div class="bars">${list.map((x) => `<div class="bar" title="${esc((x.examples || []).join(' · '))}"><span class="t">${esc(x.name)}</span><span class="b"><span style="width:${(100 * (x.score || x.count)) / mx}%;background:${color}"></span></span><span class="n">${x.count}</span></div>`).join('')}</div>`; };
+  const aud = (A.audiences?.length ? A.audiences.map((a) => ({ name: a.name, count: a.count ?? '', score: a.score ?? 1, examples: [a.note] })) : D.facets.audiences).slice(0, 14);
+  const fmt = D.facets.formats.slice(0, 14);
+  if (!aud.length && !fmt.length) return;
+  section('who', 'Who searches, and what they want', 'Audiences come from “… for X” searches; formats from the words people add: app, template, near me, course.',
+    `<div class="grid2">${aud.length ? `<div class="panel"><h3 style="margin-bottom:14px">Audiences</h3>${bars(aud, 'var(--accent)')}</div>` : ''}${fmt.length ? `<div class="panel"><h3 style="margin-bottom:14px">Formats</h3>${bars(fmt, 'var(--good)')}</div>` : ''}</div>`);
+})();
+
+// ---------- competitors ----------
+(() => {
+  const C = A.competitors || []; const brands = D.facets.brands || []; const cmp = D.facets.comparisons.slice(0, 30);
+  if (!C.length && !brands.length && !cmp.length) return;
+  section('rivals', 'Competitors and comparisons', 'Who already serves this demand, and what people weigh it against.',
+    `${C.length ? `<div class="tablebox" style="margin-bottom:16px"><table><thead><tr><th>Who</th><th>Pricing</th><th>Note</th></tr></thead><tbody>${C.map((c) => `<tr><td>${c.url ? `<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.name)}</a>` : esc(c.name)}</td><td>${esc(c.pricing || '–')}</td><td style="white-space:normal">${esc(c.note || '')}</td></tr>`).join('')}</tbody></table></div>` : ''}
+    ${cmp.length ? `<div class="panel"><div class="eyebrow" style="margin-bottom:10px">Comparison searches</div><div class="tags">${cmp.map((r) => `<span class="tag">${esc(r.k)}</span>`).join('')}</div></div>` : ''}`);
+})();
+
+// ---------- rising ----------
+(() => {
+  const R = hasM.filter((r) => r.chg != null && r.v >= 50).sort((a, b) => b.chg - a.chg).slice(0, 12);
+  if (R.length < 3) return;
+  section('rising', 'Rising', 'Keywords whose last three months beat the same months a year ago.',
+    `<div class="tablebox"><table><thead><tr><th>Keyword</th><th>Searches/mo</th><th>Change</th><th>12 months</th></tr></thead><tbody>${R.map((r) => `<tr><td class="kw">${esc(r.k)}</td><td class="num">${n0(r.v)}</td><td class="num" style="color:${r.chg > 0 ? 'var(--good)' : 'var(--pain)'}">${r.chg > 0 ? '+' : ''}${r.chg}%</td><td>${spark(r.ser || [])}</td></tr>`).join('')}</tbody></table></div>`);
+})();
+
+// ---------- content plan ----------
+if (A.contentPlan?.length) {
+  section('plan', 'Content plan', 'Pages and videos to make first, each pinned to the search it answers.',
+    `<div class="tablebox"><table><thead><tr><th>Title</th><th>Target search</th><th>Intent</th><th>Format</th></tr></thead><tbody>${A.contentPlan.map((c) => `<tr><td style="white-space:normal;min-width:240px"><strong>${esc(c.title)}</strong></td><td>${esc(c.keyword)}</td><td>${esc(c.intent || '')}</td><td>${esc(c.format || '')}</td></tr>`).join('')}</tbody></table></div>`);
+}
+
+// ---------- YouTube ----------
+if (D.youtube.length) {
+  section('video', 'What already wins on YouTube', 'Top videos for the seed and its strongest sub-niches. High views on a small channel mean the topic, not the creator, pulled the audience.',
+    `<div class="tablebox"><table><thead><tr><th>Video</th><th>Views</th><th>Channel subs</th><th>Published</th></tr></thead><tbody>${D.youtube.map((v) => `<tr><td style="white-space:normal;min-width:260px"><a href="${esc(v.url)}" target="_blank" rel="noopener">${esc(v.title)}</a><div class="muted" style="font-size:12.5px">${esc(v.channel || '')}</div></td><td class="num">${kfmt(v.views)}</td><td class="num">${kfmt(v.subs)}</td><td class="mono">${esc((v.published || '').slice(0, 10))}</td></tr>`).join('')}</tbody></table></div>`);
+}
+
+// ---------- risks / next ----------
+if (A.risks?.length || A.nextSteps?.length) {
+  section('next', 'Risks and next steps', '', `<div class="grid2">${A.risks?.length ? `<div class="panel"><h3 style="margin-bottom:10px">Risks</h3><ul class="list">${A.risks.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}${A.nextSteps?.length ? `<div class="panel"><h3 style="margin-bottom:10px">Next steps</h3><ul class="list">${A.nextSteps.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}</div>`);
+}
+
+// ---------- all keywords ----------
+(() => {
+  const clusters = [...new Set(rows.map((r) => r.c).filter(Boolean))].sort();
+  const s = section('all', 'All keywords', `${n0(rows.length)} keywords. Popularity is Wordhoard’s score (suggest relevance, agreement across engines, word frequency; rank-correlates 0.72 with Google Trends).`,
+    `<div class="toolbar"><input type="search" id="kq" placeholder="Filter keywords" aria-label="Filter keywords">
+    <select id="ki" aria-label="Intent"><option value="">Any intent</option>${Object.entries(INTENT).map(([k, [n]]) => `<option value="${k}">${n}</option>`).join('')}</select>
+    <select id="kc" aria-label="Sub-niche"><option value="">Any sub-niche</option>${clusters.map((c) => `<option>${esc(c)}</option>`).join('')}</select>
+    <label style="font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="kqq"> questions</label>
+    <button class="btn" type="button" id="kcopy">Copy CSV</button><span id="kn" class="muted mono" style="font-size:12px"></span></div>
+    <div class="tablebox" style="max-height:640px;overflow:auto"><table><thead><tr>
+      <th data-s="k">Keyword</th><th data-s="s">Popularity</th>${hasM.length ? '<th data-s="v">Searches/mo</th><th data-s="kd">Difficulty</th><th data-s="cpc">CPC</th>' : ''}<th data-s="i">Intent</th><th data-s="n">Engines</th><th data-s="c">Sub-niche</th>
+    </tr></thead><tbody id="kb"></tbody></table></div><div style="margin-top:10px"><button class="btn" type="button" id="kmore">Show more</button></div>`);
+  let sortK = 's', dir = -1, limit = 200, cur = [];
+  const draw = () => {
+    const q = $('#kq').value.trim().toLowerCase(), i = $('#ki').value, c = $('#kc').value, qq = $('#kqq').checked;
+    cur = rows.filter((r) => (!q || r.k.includes(q)) && (!i || r.i === i) && (!c || r.c === c) && (!qq || r.q));
+    cur.sort((a, b) => { const x = a[sortK], y = b[sortK]; if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1; return (x > y ? 1 : x < y ? -1 : 0) * dir; });
+    $('#kb').innerHTML = cur.slice(0, limit).map((r) => `<tr><td class="kw">${esc(r.k)}</td><td class="num">${n0(r.s)}</td>${hasM.length ? `<td class="num">${n0(r.v)}</td><td class="num">${n0(r.kd)}</td><td class="num">${money(r.cpc)}</td>` : ''}<td><span class="dot" style="background:${(INTENT[r.i] || INTENT.other)[1]}"></span>${(INTENT[r.i] || INTENT.other)[0]}</td><td class="num">${r.n}</td><td>${esc(r.c || '')}</td></tr>`).join('');
+    $('#kn').textContent = `${cur.length.toLocaleString()} shown`;
+    $('#kmore').hidden = cur.length <= limit;
+    s.querySelectorAll('th').forEach((th) => th.toggleAttribute('aria-sort', th.dataset.s === sortK));
+  };
+  ['kq', 'ki', 'kc', 'kqq'].forEach((id) => $('#' + id).addEventListener('input', () => { limit = 200; draw(); }));
+  s.querySelectorAll('th').forEach((th) => th.addEventListener('click', () => { const k = th.dataset.s; dir = sortK === k ? -dir : (k === 'k' || k === 'i' || k === 'c' ? 1 : -1); sortK = k; draw(); }));
+  $('#kmore').addEventListener('click', () => { limit += 400; draw(); });
+  $('#kcopy').addEventListener('click', async (ev) => {
+    const cell = (x) => { const t = String(x ?? ''); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+    const csv = [['keyword', 'popularity', 'searches', 'difficulty', 'cpc', 'intent', 'engines', 'subniche'], ...cur.map((r) => [r.k, r.s, r.v ?? '', r.kd ?? '', r.cpc ?? '', r.i, r.n, r.c || ''])].map((a) => a.map(cell).join(',')).join('\n');
+    try { await navigator.clipboard.writeText(csv); ev.target.textContent = 'Copied'; } catch { ev.target.textContent = 'Copy blocked'; }
+    setTimeout(() => (ev.target.textContent = 'Copy CSV'), 1600);
+  });
+  draw();
+})();
+
+// ---------- nav + footer ----------
+$('#jump').innerHTML = sections.map(([id, t]) => `<a href="#${id}">${esc(({ 'Who searches, and what they want': 'Audiences', 'Competitors and comparisons': 'Competitors', 'What already wins on YouTube': 'YouTube', 'Questions people ask': 'Questions', 'Risks and next steps': 'Next steps' }[t] || t))}</a>`).join('');
+const sp = D.spend || {};
+$('#foot').innerHTML = `Method: Wordhoard ${esc(D.engine?.version)} suggest engine on ${esc((D.engine?.sources || []).join(', '))} — ${n0(D.stats.requests)} free lookups (${n0(D.stats.refused)} refused), seed + A–Z + questions + prepositions + modifiers, then deeper on ${esc((D.stats.deeperSeeds || []).join('; ') || 'nothing')}.
+  ${D.metricsStatus === 'ok' ? `Search volume, CPC and difficulty for ${hasM.length} keywords from DeepAPI (Google US).` : `Search volumes not measured (${esc(D.metricsStatus)}${D.metricsErrors.length ? ': ' + esc(D.metricsErrors[0]) : ''}); ranking uses Wordhoard popularity.`}
+  ${D.web.length} web searches, ${D.reddit} Reddit posts, ${D.youtube.length} YouTube videos read.${sp.usd != null ? ` Paid data cost $${Number(sp.usd).toFixed(2)}.` : ''} Analysis by Claude from this evidence.`;
+})();
+</script>

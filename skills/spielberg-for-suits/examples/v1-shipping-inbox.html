@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Shipping Inbox Autopilot</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="common.css">
+<style>
+  .scene { position: absolute; inset: 0; visibility: hidden; opacity: 0; }
+
+  /* intro */
+  #intro .title { position: absolute; left: 0; right: 0; top: 330px; text-align: center; font-size: 104px; font-weight: 800; letter-spacing: -0.035em; line-height: 1.05; }
+  #intro .title .l2 { color: var(--gold); }
+  #intro .env { position: absolute; width: 46px; height: 32px; border-radius: 6px; border: 1.5px solid rgba(255,255,255,.18); }
+  #intro .env::before { content: ""; position: absolute; left: 4px; right: 4px; top: 4px; height: 14px; border-left: 1.5px solid rgba(255,255,255,.18); border-bottom: 1.5px solid rgba(255,255,255,.18); transform: skewY(-28deg) rotate(0deg); transform-origin: left top; width: 50%; }
+  #intro .env::after { content: ""; position: absolute; right: 4px; top: 4px; height: 14px; width: 50%; border-right: 1.5px solid rgba(255,255,255,.18); border-bottom: 1.5px solid rgba(255,255,255,.18); transform: skewY(28deg); transform-origin: right top; }
+
+  /* inbox */
+  #inbox { left: 96px; top: 150px; width: 860px; height: 630px; overflow: hidden; }
+  #inbox .list-clip { position: absolute; left: 0; right: 0; top: 63px; bottom: 0; overflow: hidden; }
+  #inbox .list { position: absolute; left: 0; right: 0; top: 0; }
+  #inbox .unread { color: var(--gold); font-weight: 800; }
+  .mrow.new .who::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); }
+
+  .spec { position: absolute; width: 394px; height: 200px; padding: 20px 22px; }
+  .spec .lab { font-family: var(--mono); font-size: 14px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin-bottom: 14px; display: flex; justify-content: space-between; }
+  .spec .lab b { color: var(--dim); font-weight: 500; }
+  .bar { height: 9px; border-radius: 5px; background: rgba(255,255,255,.08); margin: 9px 0; }
+  .spec .sj { font-size: 16px; font-weight: 700; line-height: 1.5; }
+  .spec .tx { font-size: 15px; color: var(--muted); line-height: 1.5; }
+  .btnmock { display: inline-flex; margin-top: 14px; background: #2f6fed; color: white; font-weight: 800; font-size: 15px; padding: 10px 18px; border-radius: 9px; }
+  .pdfthumb { position: absolute; right: 26px; top: 56px; width: 92px; height: 120px; background: #f4f1ea; border-radius: 6px; padding: 10px 9px; transform: rotate(3deg); }
+  .pdfthumb i { display: block; height: 5px; background: #c9c3b6; border-radius: 3px; margin: 6px 0; }
+  .pdfthumb .x { height: 10px; background: rgba(207,175,64,.55); outline: 2px solid var(--gold); }
+  .photo { position: absolute; right: 30px; top: 48px; width: 150px; height: 128px; border-radius: 6px; background: linear-gradient(135deg, #3b342a, #1e1b17); transform: rotate(-6deg); overflow: hidden; }
+  .photo .paper { position: absolute; left: 16px; top: 12px; width: 112px; height: 110px; background: #ece6d8; transform: rotate(9deg) skewX(-6deg); padding: 10px; box-shadow: 0 10px 20px rgba(0,0,0,.5); }
+  .photo .paper i { display: block; height: 4px; background: #b9b2a2; margin: 6px 0; border-radius: 2px; }
+  .photo .paper .x { height: 9px; background: rgba(207,175,64,.6); outline: 2px solid var(--gold); }
+  .allchips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+
+  #today { position: absolute; left: 1010px; top: 150px; width: 814px; }
+  .step { display: flex; align-items: center; gap: 18px; height: 86px; padding: 0 26px; margin-bottom: 14px; border-radius: 18px; background: var(--panel); border: 1px solid var(--line); font-size: 22px; font-weight: 700; }
+  .step .n { font-family: var(--mono); color: var(--dim); font-size: 16px; width: 26px; }
+  .step .clock { margin-left: auto; font-family: var(--mono); font-size: 16px; color: var(--muted); }
+  .step.hot { border-color: rgba(255,107,107,.35); }
+  #cost { position: absolute; left: 1010px; top: 680px; width: 814px; display: flex; align-items: baseline; gap: 22px; }
+  #cost .big { font-size: 84px; font-weight: 800; letter-spacing: -0.03em; color: var(--bad); }
+  #cost .lbl { font-size: 20px; color: var(--muted); font-weight: 600; line-height: 1.35; }
+
+  /* watchdog */
+  #core { left: 810px; top: 250px; width: 300px; height: 300px; background: radial-gradient(circle at 50% 35%, #1d2233, #10131a); border: 1px solid rgba(143,168,255,.4); box-shadow: 0 0 120px rgba(143,168,255,.25), inset 0 0 60px rgba(143,168,255,.12); }
+  #core .t1 { font-size: 30px; font-weight: 800; margin-top: 16px; }
+  #core .t2 { font-size: 16px; color: var(--muted); margin-top: 6px; font-weight: 600; }
+  #core svg { width: 82px; height: 82px; }
+  .ring { left: 810px; top: 250px; width: 300px; height: 300px; border-radius: 28px; }
+  .lens { position: absolute; width: 360px; padding: 16px 20px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line-2); }
+  .lens .k { font-family: var(--mono); font-size: 13px; letter-spacing: .14em; color: var(--ai); text-transform: uppercase; }
+  .lens .v { font-size: 20px; font-weight: 750; margin-top: 6px; }
+  .lens .s { font-size: 15px; color: var(--muted); margin-top: 3px; }
+  .ichip { position: absolute; left: 0; top: 0; width: 300px; height: 64px; border-radius: 14px; background: var(--panel-2); border: 1px solid var(--line-2); display: flex; align-items: center; gap: 12px; padding: 0 14px; font-size: 15px; font-weight: 700; }
+  .ichip .av { width: 34px; height: 34px; font-size: 14px; }
+  .ichip .s2 { color: var(--muted); font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+  .ochip { position: absolute; left: 0; top: 0; height: 52px; border-radius: 12px; background: rgba(62,207,142,.08); border: 1px solid rgba(62,207,142,.35); display: flex; align-items: center; gap: 10px; padding: 0 16px; font-size: 15px; font-weight: 700; white-space: nowrap; }
+  .ochip .d { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+  .ochip.w { background: rgba(245,177,61,.08); border-color: rgba(245,177,61,.4); }
+  .ochip.w .d { background: var(--warn); }
+
+  /* packing slip */
+  #doc { position: absolute; left: 150px; top: 150px; width: 560px; height: 640px; background: #f6f3ec; color: #1d1b17; border-radius: 10px; box-shadow: 0 50px 100px -30px rgba(0,0,0,.9); }
+  #doc.leadoff .bbox::after { opacity: 0; }
+  #doc .clip { position: absolute; inset: 0; overflow: hidden; border-radius: 10px; pointer-events: none; }
+  #doc .hd { position: absolute; left: 0; right: 0; top: 0; height: 88px; border-radius: 10px 10px 0 0; background: #1f2a3a; color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 30px; }
+  #doc .hd b { font-size: 20px; letter-spacing: .08em; }
+  #doc .hd span { font-family: var(--mono); font-size: 15px; letter-spacing: .2em; opacity: .8; }
+  #doc .f { position: absolute; left: 30px; right: 30px; font-size: 15px; }
+  #doc .f .k { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; color: #8a8273; text-transform: uppercase; }
+  #doc .f .v { font-weight: 700; margin-top: 3px; }
+  #doc table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  #doc th { text-align: left; font-family: var(--mono); font-size: 11px; letter-spacing: .12em; color: #8a8273; font-weight: 500; padding: 6px 0; border-bottom: 1px solid #d7d0c2; }
+  #doc td { padding: 9px 0; border-bottom: 1px solid #e4ddcf; font-weight: 600; }
+  #doc .barcode { position: absolute; left: 30px; bottom: 28px; height: 46px; width: 260px; background: repeating-linear-gradient(90deg, #1d1b17 0 2px, transparent 2px 4px, #1d1b17 4px 7px, transparent 7px 9px, #1d1b17 9px 10px, transparent 10px 13px); }
+  .bbox { position: absolute; border: 2.5px solid var(--ai); border-radius: 8px; background: rgba(143,168,255,.10); box-shadow: 0 0 0 4px rgba(143,168,255,.12); }
+  .bbox::after { content: ""; position: absolute; left: 540px; top: 50%; height: 1.5px; width: 40px; background: linear-gradient(90deg, rgba(143,168,255,.2), var(--ai)); }
+  .bbox .tag { position: absolute; left: 580px; top: 50%; transform: translateY(-50%); background: var(--ai); color: #0b0f1d; font-family: var(--mono); font-size: 14px; font-weight: 700; padding: 4px 8px; border-radius: 6px; white-space: nowrap; }
+  #scan { position: absolute; left: 0; right: 0; height: 120px; top: -120px; background: linear-gradient(180deg, transparent, rgba(143,168,255,.28) 85%, rgba(183,156,255,.9) 100%); mix-blend-mode: multiply; }
+  #scanline { position: absolute; left: -10px; right: -10px; height: 3px; top: 0; background: var(--ai-2); box-shadow: 0 0 30px 6px rgba(183,156,255,.7); }
+  #aibadge { position: absolute; left: 150px; top: 104px; }
+
+  /* extraction */
+  #ex { left: 1010px; top: 150px; width: 814px; padding-bottom: 26px; }
+  .fr { display: grid; grid-template-columns: 200px 1fr; align-items: center; height: 52px; padding: 0 26px; border-bottom: 1px solid var(--line); font-size: 19px; }
+  .fr .k { color: var(--muted); font-weight: 600; font-size: 16px; }
+  .fr .v { font-weight: 750; }
+  .fr .v.mono { font-size: 18px; }
+  .match { margin: 18px 26px 0; padding: 16px 20px; border-radius: 16px; background: var(--gold-soft); border: 1px solid rgba(207,175,64,.35); }
+  .match .mh { font-family: var(--mono); font-size: 13px; letter-spacing: .14em; color: var(--gold); text-transform: uppercase; margin-bottom: 10px; display: flex; justify-content: space-between; }
+  .match .mg { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .match .mk { font-size: 13px; color: var(--muted); font-weight: 600; }
+  .match .mv { font-size: 19px; font-weight: 800; margin-top: 2px; }
+  #conf { position: absolute; right: 26px; top: 10px; display: flex; align-items: center; gap: 10px; }
+  #conf svg { width: 44px; height: 44px; transform: rotate(-90deg); }
+  #conf .pct { font-family: var(--mono); font-weight: 700; font-size: 18px; color: var(--ok); }
+  #wires { position: absolute; inset: 0; pointer-events: none; }
+
+  /* rules */
+  #rules { left: 96px; top: 140px; width: 800px; height: 650px; }
+  .rule { display: grid; grid-template-columns: 34px 1fr 30px 1fr; align-items: center; gap: 12px; height: 84px; padding: 0 22px; margin: 10px 14px 0; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.015); font-size: 17px; font-weight: 700; position: relative; }
+  .rule .no { font-family: var(--mono); color: var(--dim); font-size: 14px; }
+  .rule .if { color: var(--text); }
+  .rule .if small, .rule .then small { display: block; font-family: var(--mono); font-size: 11px; letter-spacing: .14em; color: var(--dim); margin-bottom: 3px; font-weight: 500; }
+  .rule .arrow { color: var(--gold); font-size: 20px; text-align: center; }
+  .rule .then { color: var(--muted); }
+  .rule .glow { position: absolute; inset: -1px; border-radius: 14px; border: 1.5px solid var(--gold); box-shadow: 0 0 30px rgba(207,175,64,.25), inset 0 0 30px rgba(207,175,64,.08); opacity: 0; }
+  .lane { position: absolute; top: 300px; width: 280px; height: 490px; border-radius: 20px; border: 1px solid var(--line); background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.0)); overflow: hidden; }
+  .lane .lh { padding: 18px 20px 0; font-size: 18px; font-weight: 800; }
+  .lane .ls { padding: 4px 20px 0; font-size: 14px; color: var(--muted); font-weight: 600; }
+  .lane .cnt { position: absolute; left: 20px; bottom: 18px; font-size: 64px; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+  .lane .fill { position: absolute; left: 0; right: 0; bottom: 0; height: 100%; transform-origin: bottom; transform: scaleY(0); opacity: .22; -webkit-mask-image: linear-gradient(0deg, #000 30%, transparent); }
+  #funnel { position: absolute; left: 1215px; top: 140px; width: 320px; height: 110px; border-radius: 18px; border: 1px solid rgba(207,175,64,.45); background: var(--gold-soft); display: grid; place-items: center; text-align: center; }
+  #funnel b { font-size: 20px; }
+  #funnel span { display: block; font-size: 14px; color: var(--muted); font-weight: 600; margin-top: 2px; }
+  .fchip { position: absolute; left: 0; top: 0; width: 40px; height: 26px; border-radius: 6px; box-shadow: 0 6px 16px rgba(0,0,0,.4); }
+  .fchip::after { content: ""; position: absolute; left: 7px; right: 7px; top: 7px; height: 9px; border-left: 2px solid rgba(0,0,0,.35); border-bottom: 2px solid rgba(0,0,0,.35); border-right: 2px solid rgba(0,0,0,.35); clip-path: polygon(0 0, 50% 100%, 100% 0, 100% 100%, 0 100%); }
+  .footnote { position: absolute; right: 96px; bottom: 40px; font-family: var(--mono); font-size: 13px; color: var(--dim); letter-spacing: .08em; }
+
+  /* portal */
+  #portal { left: 96px; top: 140px; width: 1120px; height: 650px; overflow: hidden; }
+  .ph2 { padding: 22px 28px 8px; display: flex; align-items: baseline; gap: 16px; }
+  .ph2 .city { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; }
+  .ph2 .open { color: var(--muted); font-weight: 600; font-size: 17px; }
+  .prow { display: grid; grid-template-columns: 250px 210px 300px 90px 150px; align-items: center; height: 70px; padding: 0 28px; border-top: 1px solid var(--line); font-size: 16px; font-weight: 700; }
+  .prow.head { height: 44px; font-family: var(--mono); font-size: 12px; letter-spacing: .14em; color: var(--dim); font-weight: 500; text-transform: uppercase; }
+  .prow .sub { color: var(--muted); font-weight: 600; }
+  .prow .mono { font-size: 14px; color: var(--muted); }
+  .st { position: relative; height: 34px; }
+  .st .chip { position: absolute; left: 0; top: 0; }
+  #review { left: 1250px; top: 140px; width: 574px; height: 650px; }
+  .crop { margin: 20px 24px 0; height: 210px; border-radius: 14px; background: linear-gradient(160deg, #3a3329, #1c1915); position: relative; overflow: hidden; }
+  .crop .paper { position: absolute; left: 50px; top: 26px; width: 420px; height: 170px; background: #ebe4d3; transform: rotate(-3deg); box-shadow: 0 16px 30px rgba(0,0,0,.5); }
+  .crop .ink { position: absolute; left: 34px; top: 46px; font-family: var(--marker); font-size: 58px; color: #1b2440; transform: rotate(-4deg); letter-spacing: .02em; }
+  .crop .blot { position: absolute; left: 304px; top: 58px; width: 54px; height: 64px; border-radius: 45% 55% 50% 40%; background: radial-gradient(circle at 40% 40%, rgba(60,70,110,.75), rgba(60,70,110,.2) 70%, transparent 72%); filter: blur(2px); }
+  .crop .bb { position: absolute; left: 312px; top: 54px; width: 58px; height: 82px; border: 2.5px solid var(--warn); border-radius: 10px; }
+  .q { margin: 22px 26px 0; font-size: 26px; font-weight: 800; letter-spacing: -0.01em; }
+  .ev { margin: 10px 26px 0; font-size: 16px; color: var(--muted); font-weight: 600; line-height: 1.5; }
+  .ev b { color: var(--ai); }
+  .btns { display: flex; gap: 14px; margin: 26px 26px 0; }
+  .btn { flex: 1; height: 64px; border-radius: 14px; display: grid; place-items: center; font-weight: 800; font-size: 19px; border: 1px solid var(--line-2); }
+  .btn.pri { background: var(--gold); color: #17140a; border-color: var(--gold); }
+  #done { position: absolute; left: 26px; right: 26px; bottom: 26px; height: 70px; border-radius: 14px; background: var(--ok-soft); border: 1px solid rgba(62,207,142,.4); color: var(--ok); display: flex; align-items: center; justify-content: center; gap: 12px; font-weight: 800; font-size: 20px; }
+  #cursor { position: absolute; left: 0; top: 0; width: 34px; height: 34px; z-index: 60; filter: drop-shadow(0 6px 10px rgba(0,0,0,.6)); }
+
+  /* end */
+  #end .big { position: absolute; left: 0; right: 0; top: 300px; text-align: center; font-size: 96px; font-weight: 800; letter-spacing: -0.035em; }
+  #end .big em { font-style: normal; color: var(--gold); }
+  #end .flow { position: absolute; left: 0; right: 0; top: 500px; display: flex; justify-content: center; align-items: center; gap: 22px; }
+  #end .pill { padding: 22px 30px; border-radius: 18px; background: var(--panel); border: 1px solid var(--line-2); font-size: 24px; font-weight: 750; }
+  #end .pill b { display: block; font-family: var(--mono); font-size: 13px; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 6px; }
+  #end .arr { color: var(--dim); font-size: 30px; }
+  #end .next { position: absolute; left: 0; right: 0; top: 720px; text-align: center; font-family: var(--mono); font-size: 20px; letter-spacing: .14em; color: var(--muted); text-transform: uppercase; }
+  #end .next b { color: var(--gold); font-weight: 600; }
+</style>
+</head>
+<body>
+<div id="viewport"><div id="stage">
+  <div class="bg">
+    <div class="bg-grid" id="grid"></div>
+    <div class="bg-glow" id="glowA" style="left:-200px;top:-260px;width:900px;height:700px;background:#2a2410"></div>
+    <div class="bg-glow" id="glowB" style="right:-260px;bottom:-300px;width:1000px;height:800px;background:#141a33"></div>
+    <div class="bg-vignette"></div>
+  </div>
+
+  <div class="brandmark" id="brand"><span class="dot"></span>Fernbrook<span class="sep">/</span><span class="sub">Shipping inbox autopilot</span></div>
+  <div class="chapters" id="chap"><div class="ch"><i></i></div><div class="ch"><i></i></div><div class="ch"><i></i></div><div class="ch"><i></i></div><div class="ch"><i></i></div><div class="ch"><i></i></div></div>
+
+  <!-- 0. intro -->
+  <section class="scene" id="intro">
+    <div id="envs"></div>
+    <div class="title"><div class="l1">Every shipment sends an email.</div><div class="l2">No two look the same.</div></div>
+  </section>
+
+  <!-- 1. chaos -->
+  <section class="scene" id="chaos">
+    <div class="panel" id="inbox">
+      <div class="panel-h"><span class="lights"><i></i><i></i><i></i></span>shipping@ inbox<span class="meta"><span class="unread" id="unread">0</span> unread</span></div>
+      <div class="list-clip"><div class="list" id="list"></div></div>
+    </div>
+    <div id="specs">
+      <div class="panel spec" style="left:1010px;top:150px"><div class="lab">In the subject <b>01</b></div>
+        <div class="sj">Shipped: PO 48213 · <span class="hl mono">1Z 999 AA1 0123 4567 84</span></div><div class="bar" style="width:80%"></div><div class="bar" style="width:55%"></div></div>
+      <div class="panel spec" style="left:1430px;top:150px"><div class="lab">In the body <b>02</b></div>
+        <div class="bar" style="width:90%"></div><div class="tx">Your order shipped via FedEx.<br>Tracking: <span class="hl mono">7712 3456 9981</span></div><div class="bar" style="width:60%"></div></div>
+      <div class="panel spec" style="left:1010px;top:370px"><div class="lab">Behind a link <b>03</b></div>
+        <div class="bar" style="width:85%"></div><div class="bar" style="width:62%"></div><div class="btnmock" style="box-shadow:0 0 0 3px rgba(207,175,64,.7)">Track your shipment →</div></div>
+      <div class="panel spec" style="left:1430px;top:370px"><div class="lab">In a PDF <b>04</b></div>
+        <div class="bar" style="width:46%"></div><div class="bar" style="width:38%"></div><span class="att" style="margin-top:12px">▤ packing_slip.pdf</span>
+        <div class="pdfthumb"><i style="width:70%"></i><i></i><i class="x"></i><i></i><i style="width:60%"></i><i></i><i style="width:80%"></i></div></div>
+      <div class="panel spec" style="left:1010px;top:590px"><div class="lab">In a phone photo <b>05</b></div>
+        <div class="bar" style="width:40%"></div><span class="att" style="margin-top:12px">▧ IMG_4471.jpg</span>
+        <div class="photo"><div class="paper"><i></i><i style="width:70%"></i><i class="x"></i><i></i><i style="width:50%"></i></div></div></div>
+      <div class="panel spec" style="left:1430px;top:590px"><div class="lab">All of them at once <b>06</b></div>
+        <div class="tx" style="margin-bottom:6px">One email, five copies of the number:</div>
+        <div class="allchips"><span class="chip gold">Subject</span><span class="chip gold">Body</span><span class="chip gold">Link</span><span class="chip gold">PDF</span><span class="chip gold">Screenshot</span></div></div>
+    </div>
+    <div id="today">
+      <div class="step"><span class="n">01</span>Open the email</div>
+      <div class="step"><span class="n">02</span>Hunt for the tracking number</div>
+      <div class="step"><span class="n">03</span>Look up the PO and manufacturer</div>
+      <div class="step"><span class="n">04</span>Figure out which project and city</div>
+      <div class="step hot"><span class="n">05</span>Retype it into the portal</div>
+    </div>
+    <div id="cost"><span class="big">≈ $<span id="costn">0</span>K</span><span class="lbl">a year spent on people<br>sorting and retyping (estimate)</span></div>
+  </section>
+
+  <!-- 2. watchdog -->
+  <section class="scene" id="watch">
+    <div id="streamIn"></div>
+    <div class="ring" id="r1"></div><div class="ring" id="r2"></div><div class="ring" id="r3"></div>
+    <div class="node" id="core">
+      <div>
+        <svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="22" stroke="#8fa8ff" stroke-width="3" opacity=".35"/><path d="M40 14a20 20 0 1 0 10 26A16 16 0 1 1 40 14z" fill="#8fa8ff"/><circle cx="46" cy="18" r="2.5" fill="#b79cff"/></svg>
+        <div class="t1">Inbox watchdog</div>
+        <div class="t2">reads every email as it lands</div>
+      </div>
+    </div>
+    <div class="lens" id="lensA" style="left:780px;top:600px;width:360px"><div class="k">AI model · text</div><div class="v">Subject + body</div><div class="s">Finds numbers in any wording</div></div>
+    <div class="lens" id="lensB" style="left:390px;top:600px"><div class="k">AI model · links</div><div class="v">Opens tracking links</div><div class="s">Reads the carrier page</div></div>
+    <div class="lens" id="lensC" style="left:1170px;top:600px"><div class="k">AI model · vision</div><div class="v">PDFs, photos, screenshots</div><div class="s">Reads them like a person would</div></div>
+    <div id="streamOut"></div>
+  </section>
+
+  <!-- 3. vision + extract -->
+  <section class="scene" id="vision">
+    <div id="doc">
+      <div class="hd"><b>NORTHLINE REFRIGERATION</b><span>PACKING SLIP</span></div>
+      <div class="f" style="top:112px"><div class="k">Ship to</div><div class="v">Riverbend Storage · Dock 3<br>Riverbend, OH 45999</div></div>
+      <div class="f" style="top:196px;display:flex;gap:110px"><div><div class="k">PO number</div><div class="v mono" style="font-size:18px">48213</div></div><div><div class="k">Ship date</div><div class="v">12/02/2026</div></div></div>
+      <div class="f" style="top:262px"><div class="k">Carrier · tracking</div><div class="v">UPS Ground · <span class="mono">1Z 999 AA1 0123 4567 84</span></div></div>
+      <div class="f" style="top:332px">
+        <table><tr><th>SKU</th><th>Description</th><th style="text-align:right">Qty</th></tr>
+        <tr><td class="mono">WIC-810</td><td>Walk-in cooler panel kit</td><td style="text-align:right">12</td></tr>
+        <tr><td class="mono">RIF-2D</td><td>Reach-in freezer, 2 door</td><td style="text-align:right">2</td></tr>
+        <tr><td class="mono">EVAP-4</td><td>Evaporator coil</td><td style="text-align:right">1</td></tr>
+        <tr><td class="mono">CTL-9</td><td>Temp controller</td><td style="text-align:right">2</td></tr></table>
+      </div>
+      <div class="barcode"></div>
+      <div class="bbox" id="bbPO" style="left:20px;top:188px;width:130px;height:62px"><span class="tag">PO</span></div>
+      <div class="bbox" id="bbTR" style="left:20px;top:254px;width:440px;height:62px"><span class="tag">CARRIER + TRACKING</span></div>
+      <div class="bbox" id="bbIT" style="left:20px;top:326px;width:520px;height:200px"><span class="tag">17 ITEMS · 4 LINES</span></div>
+      <div class="bbox" id="bbSH" style="left:20px;top:104px;width:330px;height:76px"><span class="tag">DELIVER TO</span></div>
+      <div class="clip"><div id="scan"><div id="scanline" style="top:118px"></div></div></div>
+    </div>
+    <div id="aibadge" class="chip ai">☾ AI model · vision</div>
+    <svg id="wires" viewBox="0 0 1920 1080"></svg>
+    <div class="panel" id="ex">
+      <div class="panel-h">Extracted shipment <span class="chip ok" style="margin-left:6px">Shipment confirmation</span>
+        <div id="conf"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" stroke="rgba(255,255,255,.1)" stroke-width="4" fill="none"/><circle id="confArc" cx="22" cy="22" r="18" stroke="#3ecf8e" stroke-width="4" fill="none" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="113.1"/></svg><span class="pct" id="confN">0%</span></div></div>
+      <div class="fr" data-f="0"><span class="k">Manufacturer</span><span class="v" data-v="Northline Refrigeration"></span></div>
+      <div class="fr" data-f="1"><span class="k">PO number</span><span class="v mono" data-v="48213"></span></div>
+      <div class="fr" data-f="2"><span class="k">Carrier</span><span class="v" data-v="UPS Ground"></span></div>
+      <div class="fr" data-f="3"><span class="k">Tracking</span><span class="v mono" data-v="1Z 999 AA1 0123 4567 84"></span></div>
+      <div class="fr" data-f="4"><span class="k">Items</span><span class="v" data-v="17 items · walk-in kit, freezer, coil, controls"></span></div>
+      <div class="fr" data-f="5"><span class="k">Shipped → ETA</span><span class="v" data-v="Dec 2 → Dec 9"></span></div>
+      <div class="match" id="match"><div class="mh"><span>Matched to</span><span>PO 48213 → project record</span></div>
+        <div class="mg">
+          <div><div class="mk">Brand</div><div class="mv">Bluebird Burger Co.</div></div>
+          <div><div class="mk">Project</div><div class="mv">Riverbend, OH</div></div>
+          <div><div class="mk">Deliver to</div><div class="mv">Riverbend Storage</div></div>
+        </div></div>
+    </div>
+  </section>
+
+  <!-- 4. rules -->
+  <section class="scene" id="route">
+    <div class="panel" id="rules">
+      <div class="panel-h"><span style="color:var(--gold)">◆</span> Rules engine · routing rules<span class="meta">our rules, in plain words</span></div>
+      <div class="rule" data-r="0"><span class="no">01</span><span class="if"><small>IF</small>Shipping or tracking email</span><span class="arrow">→</span><span class="then"><small>THEN</small>Extract + match to project</span><span class="glow"></span></div>
+      <div class="rule" data-r="1"><span class="no">02</span><span class="if"><small>IF</small>Tracking only behind a link</span><span class="arrow">→</span><span class="then"><small>THEN</small>Open it, read the carrier page</span><span class="glow"></span></div>
+      <div class="rule" data-r="2"><span class="no">03</span><span class="if"><small>IF</small>PDF, photo or screenshot</span><span class="arrow">→</span><span class="then"><small>THEN</small>Read it with AI vision</span><span class="glow"></span></div>
+      <div class="rule" data-r="3"><span class="no">04</span><span class="if"><small>IF</small>Confident match (95%+)</span><span class="arrow">→</span><span class="then" style="color:var(--ok)"><small>THEN</small>File to the portal</span><span class="glow"></span></div>
+      <div class="rule" data-r="4"><span class="no">05</span><span class="if"><small>IF</small>Anything unsure</span><span class="arrow">→</span><span class="then" style="color:var(--warn)"><small>THEN</small>Human check, evidence shown</span><span class="glow"></span></div>
+      <div class="rule" data-r="5"><span class="no">06</span><span class="if"><small>IF</small>Not about shipping</span><span class="arrow">→</span><span class="then"><small>THEN</small>Leave it in the inbox</span><span class="glow"></span></div>
+    </div>
+    <div id="funnel"><div><b>247 emails</b><span>one morning's inbox</span></div></div>
+    <div class="lane" id="laneA" style="left:944px"><div class="fill" style="background:var(--ok)"></div><div class="lh" style="color:var(--ok)">Filed automatically</div><div class="ls">matched, in the portal</div><div class="cnt" id="cA">0</div></div>
+    <div class="lane" id="laneB" style="left:1244px"><div class="fill" style="background:var(--warn)"></div><div class="lh" style="color:var(--warn)">Quick human check</div><div class="ls">one tap to confirm</div><div class="cnt" id="cB">0</div></div>
+    <div class="lane" id="laneC" style="left:1544px"><div class="fill" style="background:#8b919b"></div><div class="lh" style="color:var(--muted)">Not shipping</div><div class="ls">left for a person</div><div class="cnt" id="cC">0</div></div>
+    <div id="fchips"></div>
+    <div class="footnote">Volumes are illustrative</div>
+  </section>
+
+  <!-- 5. portal + review -->
+  <section class="scene" id="result">
+    <div class="panel" id="portal">
+      <div class="ph2"><span class="city">Riverbend, OH</span><span class="open">Bluebird Burger Co. · opens January · inbound shipments</span></div>
+      <div class="prow head"><span>Manufacturer</span><span>Items</span><span>Carrier · tracking</span><span>ETA</span><span>Status</span></div>
+      <div class="prow"><span>Northline Refrigeration</span><span class="sub">Walk-in kit +3</span><span class="mono">UPS · 1Z999AA10123456784</span><span>Dec 9</span><span class="st"><span class="chip ok">In transit</span></span></div>
+      <div class="prow"><span>Atlas Kitchen Equip.</span><span class="sub">Fryers ×2</span><span class="mono">FedEx · 771234569981</span><span>Dec 11</span><span class="st"><span class="chip ok">In transit</span></span></div>
+      <div class="prow"><span>Summit Hoods</span><span class="sub">Hood system</span><span class="mono">XPO · 418220913</span><span>Dec 14</span><span class="st"><span class="chip ai">Scheduled</span></span></div>
+      <div class="prow"><span>Prairie Seating Co.</span><span class="sub">Booths ×8</span><span class="mono">Estes · 2041778321</span><span>Dec 16</span><span class="st"><span class="chip ok">In transit</span></span></div>
+      <div class="prow"><span>Brightline Signage</span><span class="sub">Exterior sign</span><span class="mono">R+L · 518821190</span><span>Dec 20</span><span class="st"><span class="chip warn" id="stW">Needs check</span><span class="chip ok" id="stO">In transit</span></span></div>
+      <div class="prow"><span>Coastal Smallwares</span><span class="sub">143 items</span><span class="mono">UPS · 1Z4X81120399</span><span>Dec 3</span><span class="st"><span class="chip gold">Delivered</span></span></div>
+      <div class="prow"><span>Keystone Millwork</span><span class="sub">Counters ×3</span><span class="mono">XPO · 418224470</span><span>Dec 22</span><span class="st"><span class="chip ai">Scheduled</span></span></div>
+    </div>
+    <div class="panel" id="review">
+      <div class="panel-h">Quick check <span class="chip warn" style="margin-left:6px">1 of 23</span><span class="meta">Brightline Signage</span></div>
+      <div class="crop"><div class="paper"></div><div class="ink">PO # 4826<span style="opacity:.55">1</span></div><div class="blot"></div><div class="bb"></div></div>
+      <div class="q">Is this PO 48261?</div>
+      <div class="ev">Last digit is smudged in the photo. <b>AI: 88% sure</b> — the order confirmation in the same thread says 48261.</div>
+      <div class="btns"><div class="btn pri" id="yes">Yes, 48261</div><div class="btn">Fix it</div></div>
+      <div id="done">✓ Confirmed and filed · 3 seconds</div>
+    </div>
+    <svg id="cursor" viewBox="0 0 24 24"><path d="M4 2l16 9.5-7 1.6-3.6 6.9z" fill="#fff" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/></svg>
+  </section>
+
+  <!-- 6. end -->
+  <section class="scene" id="end">
+    <div class="big">Shipping inbox, <em>on autopilot.</em></div>
+    <div class="flow">
+      <div class="pill"><b style="color:var(--ai)">AI model</b>reads every email</div><span class="arr">→</span>
+      <div class="pill"><b style="color:var(--gold)">Rules engine</b>routes it by our rules</div><span class="arr">→</span>
+      <div class="pill"><b style="color:var(--ok)">Our team</b>only confirms</div>
+    </div>
+    <div class="next">Next · <b>warehouse receiving, from Sharpie to system</b></div>
+  </section>
+
+  <!-- captions -->
+  <div class="cap" id="capB1"><div class="kicker">01 <b>/ The problem</b></div><div class="h">Tracking hides in the <em>subject</em>, the <em>body</em>, a <em>link</em>,<br>a <em>PDF</em>, a <em>phone photo</em> — or all of them.</div></div>
+  <div class="cap" id="capB2"><div class="kicker">01 <b>/ Today</b></div><div class="h">So a person opens every one, hunts for the number,<br>and <em>retypes it by hand.</em></div></div>
+  <div class="cap" id="capC1"><div class="kicker">02 <b>/ The watchdog</b></div><div class="h">A watchdog reads every email the moment it lands —<br><span class="ai">text, links, PDFs and photos.</span></div></div>
+  <div class="cap" id="capC2"><div class="kicker">02 <b>/ Vision</b></div><div class="h"><span class="ai">The AI</span> reads the attachment the way a person would,<br>and pulls out what matters.</div></div>
+  <div class="cap" id="capD"><div class="kicker">03 <b>/ Match</b></div><div class="h">Then it ties the shipment to the <em>manufacturer, PO,</em><br><em>brand, project and city</em> — no lookup needed.</div></div>
+  <div class="cap" id="capE"><div class="kicker">04 <b>/ Route</b></div><div class="h"><em>Rules engine</em> applies our rules:<br>file it, flag it for a person, or leave it alone.</div></div>
+  <div class="cap" id="capF"><div class="kicker">05 <b>/ Result</b></div><div class="h">The portal fills itself. People stop sorting —<br><em>they just confirm.</em></div></div>
+</div></div>
+
+<script src="vendor/gsap.min.js"></script>
+<script src="common.js"></script>
+<script>
+const { $, $$, capIn, capOut, type, count, chapters, boot } = M;
+
+// seeded rng so every render is identical
+let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+const AV = ["#cfaf40", "#8fa8ff", "#3ecf8e", "#f5b13d", "#ff8f6b", "#b79cff", "#5fd3e6", "#e7e3d8"];
+
+// ---------- build dynamic content ----------
+const envs = $("#envs");
+const envEls = [];
+for (let i = 0; i < 46; i++) {
+  const e = document.createElement("div");
+  e.className = "env";
+  e.style.left = (rnd() * 1880) + "px"; e.style.top = (rnd() * 1040) + "px";
+  e.style.transform = `scale(${0.6 + rnd() * 0.9})`;
+  envs.appendChild(e); envEls.push(e);
+}
+
+const mails = [
+  ["Northline Refrigeration", "Shipped: PO 48213 · 1Z 999 AA1 0123 4567 84", "", "8:41"],
+  ["UPS Quantum View", "UPS Update: package scheduled for delivery", "", "8:40"],
+  ["Atlas Kitchen Equipment", "Your order is on its way!", "", "8:38"],
+  ["Prairie Seating Co.", "BOL attached — booths, Riverbend", "▧ IMG_4471.jpg", "8:35"],
+  ["Summit Hoods", "Freight pickup confirmed — see packing list", "▤ packing_list.pdf", "8:31"],
+  ["FedEx", "Your shipment 7712 3456 9981 is in transit", "", "8:29"],
+  ["Brightline Signage", "Re: Re: when will the sign ship?", "▧ screenshot.png", "8:22"],
+  ["Coastal Smallwares", "Order 1182 delivered", "", "8:20"],
+  ["Keystone Millwork", "[EXTERNAL] ASN 004471", "▤ ASN_004471.pdf", "8:16"],
+  ["XPO Logistics", "Pickup notice · PRO 418220913", "", "8:12"],
+  ["Granite Plumbing Supply", "Shipment notification — SO-88412", "", "8:09"],
+  ["Estes Express", "Delivery appointment request", "", "8:03"],
+  ["Ridge Lighting", "Track your shipment", "", "7:58"],
+  ["Old Mill Furniture", "Packing slip + photos", "▤ slip.pdf  ▧ 3 photos", "7:51"],
+  ["Delta Fryers", "Fwd: tracking for your fryer order", "", "7:47"],
+  ["R+L Carriers", "Your freight has shipped", "", "7:40"],
+  ["Harbor Cabinetry", "Shipping docs for PO 48266", "▤ docs.pdf", "7:33"],
+];
+const list = $("#list");
+mails.forEach((m, i) => {
+  const r = document.createElement("div");
+  r.className = "mrow new";
+  r.innerHTML = `<div class="av" style="background:${AV[i % AV.length]}">${m[0][0]}</div>
+    <div><div class="who">${m[0]}</div><div class="subj">${m[1]}</div></div>
+    <div style="text-align:right"><div class="t">${m[3]}</div>${m[2] ? `<div class="att" style="margin-top:6px">${m[2]}</div>` : ""}</div>`;
+  list.appendChild(r);
+});
+
+const streamIn = $("#streamIn");
+const inChips = mails.slice(0, 10).map((m, i) => {
+  const c = document.createElement("div");
+  c.className = "ichip";
+  c.innerHTML = `<div class="av" style="background:${AV[i % AV.length]}">${m[0][0]}</div><div><div>${m[0]}</div><div class="s2">${m[1]}</div></div>`;
+  streamIn.appendChild(c); return c;
+});
+const outs = [
+  ["Shipment · Northline · PO 48213", ""], ["Tracking update · UPS", ""], ["Shipment · Atlas · 2 fryers", ""],
+  ["BOL photo · Prairie · read", ""], ["Packing list · Summit", ""], ["In transit · FedEx", ""],
+  ["PO unclear · Brightline", "w"], ["Delivered · Coastal", ""], ["ASN · Keystone · 3 lines", ""], ["Pickup · XPO", ""],
+];
+const streamOut = $("#streamOut");
+const outChips = outs.map((o) => {
+  const c = document.createElement("div");
+  c.className = "ochip " + o[1];
+  c.innerHTML = `<span class="d"></span>${o[0]}`;
+  streamOut.appendChild(c); return c;
+});
+
+// ---------- timeline ----------
+const tl = gsap.timeline({ paused: true, defaults: { ease: "power3.out" } });
+const T = { intro: 0, chaos: 5.5, today: 13.2, watch: 19.5, vision: 25.5, match: 31.5, route: 43, result: 55, end: 65.5, total: 73 };
+chapters(tl, [T.chaos, T.watch, T.vision, T.route, T.result, T.end], T.total);
+tl.fromTo("#chap", { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.6 }, T.chaos);
+tl.fromTo("#brand", { autoAlpha: 0, y: -10 }, { autoAlpha: 1, y: 0, duration: 0.8 }, 0.2);
+
+// ambient background drift (whole video)
+tl.fromTo("#grid", { x: 0, y: 0 }, { x: -64, y: -64, duration: T.total, ease: "none" }, 0);
+tl.fromTo("#glowA", { x: 0, y: 0 }, { x: 260, y: 120, duration: T.total, ease: "sine.inOut" }, 0);
+tl.fromTo("#glowB", { x: 0, y: 0 }, { x: -220, y: -80, duration: T.total, ease: "sine.inOut" }, 0);
+
+// ===== intro =====
+tl.set("#intro", { autoAlpha: 1 }, 0);
+envEls.forEach((e, i) => {
+  const d = 0.1 + rnd() * 1.4;
+  tl.fromTo(e, { autoAlpha: 0, y: 40 }, { autoAlpha: 0.25 + rnd() * 0.5, y: 0, duration: 1.2, ease: "power2.out" }, d);
+  tl.to(e, { yPercent: -200 - rnd() * 250, x: (rnd() - 0.5) * 60, duration: 6, ease: "none" }, d);
+});
+tl.from("#intro .l1", { autoAlpha: 0, y: 40, filter: "blur(14px)", duration: 1.1 }, 0.5);
+tl.from("#intro .l2", { autoAlpha: 0, y: 40, filter: "blur(14px)", duration: 1.1 }, 1.7);
+// envelopes rush toward the left (into the inbox)
+tl.to(envEls, { x: -900, y: "+=120", autoAlpha: 0, duration: 1.1, ease: "power3.in", stagger: { each: 0.012, from: "end" } }, 4.4);
+tl.to("#intro .title", { autoAlpha: 0, scale: 0.94, filter: "blur(12px)", duration: 0.7, ease: "power2.in" }, 4.6);
+tl.set("#intro", { autoAlpha: 0 }, T.chaos);
+
+// ===== chaos =====
+tl.set("#chaos", { autoAlpha: 1 }, T.chaos);
+tl.fromTo("#inbox", { autoAlpha: 0, y: 40, scale: 0.97 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.9 }, T.chaos);
+// emails arrive: list starts shifted up so all rows are hidden, then steps down row by row
+const RH = 74, N = mails.length;
+tl.set("#list", { y: -RH * N }, T.chaos);
+for (let i = 0; i < N; i++) {
+  const at = T.chaos + 0.5 + 3.6 * Math.pow(i / (N - 1), 0.62);
+  tl.to("#list", { y: -RH * (N - 1 - i), duration: 0.45, ease: "back.out(1.4)" }, at);
+}
+count(tl, $("#unread"), 0, 247, T.chaos + 0.5, 4.2);
+capIn(tl, "#capB1", T.chaos + 0.6);
+$$(".spec").forEach((s, i) => {
+  tl.fromTo(s, { autoAlpha: 0, y: 30, rotateX: -25, scale: 0.94 }, { autoAlpha: 1, y: 0, rotateX: 0, scale: 1, duration: 0.8, ease: "back.out(1.3)" }, T.chaos + 1.6 + i * 0.55);
+  const hl = $(".hl, .btnmock, .pdfthumb .x, .photo .x, .allchips", s);
+  if (hl) tl.fromTo(hl, { boxShadow: "0 0 0 0px rgba(207,175,64,0)" }, { boxShadow: "0 0 0 6px rgba(207,175,64,.35)", duration: 0.5, yoyo: true, repeat: 1, ease: "sine.inOut" }, T.chaos + 2.1 + i * 0.55);
+});
+// switch to "today"
+capOut(tl, "#capB1", T.today - 0.5);
+tl.to(".spec", { autoAlpha: 0, x: 60, duration: 0.5, ease: "power2.in", stagger: 0.04 }, T.today - 0.5);
+capIn(tl, "#capB2", T.today);
+$$("#today .step").forEach((s, i) => {
+  tl.fromTo(s, { autoAlpha: 0, x: 80 }, { autoAlpha: 1, x: 0, duration: 0.6 }, T.today + 0.3 + i * 0.32);
+});
+tl.fromTo("#cost", { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: 0.7 }, T.today + 2.2);
+count(tl, $("#costn"), 0, 100, T.today + 2.3, 1.6);
+// inbox "drowns": rows jitter
+tl.to("#inbox", { borderColor: "rgba(255,107,107,.45)", duration: 0.6 }, T.today + 2.4);
+
+// out
+capOut(tl, "#capB2", T.watch - 0.5);
+tl.to("#today .step, #cost", { autoAlpha: 0, x: 50, duration: 0.45, ease: "power2.in", stagger: 0.03 }, T.watch - 0.6);
+tl.to("#inbox", { x: -260, autoAlpha: 0, scale: 0.9, duration: 0.7, ease: "power3.in" }, T.watch - 0.6);
+tl.set("#chaos", { autoAlpha: 0 }, T.watch + 0.2);
+
+// ===== watchdog =====
+tl.set("#watch", { autoAlpha: 1 }, T.watch);
+tl.fromTo("#core", { autoAlpha: 0, scale: 0.6, rotate: -8 }, { autoAlpha: 1, scale: 1, rotate: 0, duration: 1.1, ease: "back.out(1.6)" }, T.watch);
+["#r1", "#r2", "#r3"].forEach((r, i) => {
+  tl.fromTo(r, { autoAlpha: 0.7, scale: 1 }, { autoAlpha: 0, scale: 1.7, duration: 2.4, ease: "power1.out", repeat: 4 }, T.watch + 0.4 + i * 0.8);
+});
+tl.fromTo(["#lensB", "#lensA", "#lensC"], { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.18 }, T.watch + 0.9);
+capIn(tl, "#capC1", T.watch + 0.4);
+inChips.forEach((c, i) => {
+  const at = T.watch + 0.8 + i * 0.42;
+  const y0 = [170, 300, 430][i % 3] + (i % 2) * 20;
+  tl.fromTo(c, { x: -340, y: y0, autoAlpha: 0, scale: 1 }, { x: 190, y: y0, autoAlpha: 1, duration: 0.8, ease: "power2.out" }, at);
+  tl.to(c, { x: 810, y: 368, scale: 0.25, autoAlpha: 0, duration: 0.6, ease: "power2.in" }, at + 0.8);
+  tl.fromTo("#core", { scale: 1 }, { scale: 1.04, duration: 0.15, yoyo: true, repeat: 1, ease: "sine.inOut", immediateRender: false }, at + 1.3);
+  const o = outChips[i];
+  const oy = 120 + ((i * 61) % 400);
+  tl.fromTo(o, { x: 1010, y: 375, autoAlpha: 0, scale: 0.4 }, { x: 1300 + (i % 2) * 120, y: oy, autoAlpha: 1, scale: 1, duration: 0.8, ease: "power3.out" }, at + 1.35);
+  tl.to(o, { x: 1980, autoAlpha: 0, duration: 1.2, ease: "power2.in" }, at + 3.0);
+});
+capOut(tl, "#capC1", T.vision - 0.5);
+tl.to(["#core", "#lensA", "#lensB", "#lensC", "#r1", "#r2", "#r3"], { autoAlpha: 0, scale: 0.9, duration: 0.5, ease: "power2.in" }, T.vision - 0.5);
+tl.set("#watch", { autoAlpha: 0 }, T.vision + 0.1);
+
+// ===== vision =====
+tl.set("#vision", { autoAlpha: 1 }, T.vision);
+tl.set("#ex", { autoAlpha: 0 }, T.vision);
+tl.fromTo("#doc", { x: 530, y: 60, rotate: 4, autoAlpha: 0, scale: 0.9 }, { x: 530, y: 0, rotate: 0, autoAlpha: 1, scale: 1, duration: 1.0 }, T.vision);
+tl.fromTo("#aibadge", { autoAlpha: 0, y: 10, x: 530 }, { autoAlpha: 1, y: 0, x: 530, duration: 0.6 }, T.vision + 0.6);
+capIn(tl, "#capC2", T.vision + 0.3);
+tl.fromTo("#scan", { y: 0 }, { y: 780, duration: 2.6, ease: "sine.inOut" }, T.vision + 1.0);
+["#bbSH", "#bbPO", "#bbTR", "#bbIT"].forEach((b, i) => {
+  tl.fromTo(b, { autoAlpha: 0, scale: 1.15 }, { autoAlpha: 1, scale: 1, duration: 0.45, ease: "back.out(2)" }, T.vision + 1.25 + [0, 0.45, 0.75, 1.15][i]);
+});
+capOut(tl, "#capC2", T.match - 0.4);
+tl.to(".bbox .tag", { autoAlpha: 0, x: -20, duration: 0.4, ease: "power2.in", stagger: 0.05 }, T.match - 0.5);
+tl.set("#doc", { className: "leadoff" }, T.match - 0.1);
+// doc slides left, extraction panel appears
+tl.to("#doc", { x: 0, duration: 1.0, ease: "power3.inOut" }, T.match - 0.2);
+tl.to("#aibadge", { x: 0, duration: 1.0, ease: "power3.inOut" }, T.match - 0.2);
+tl.fromTo("#ex", { autoAlpha: 0, x: 60 }, { autoAlpha: 1, x: 0, duration: 0.8 }, T.match + 0.5);
+capIn(tl, "#capD", T.match + 0.6);
+
+// wires from doc boxes to fields
+const wires = $("#wires");
+const off = (el) => { let x = 0, y = 0; while (el && el.id !== "stage") { x += el.offsetLeft; y += el.offsetTop; el = el.offsetParent; } return { x, y }; };
+const frs = $$("#ex .fr");
+const pairs = [["#bbSH", 0], ["#bbPO", 1], ["#bbTR", 2], ["#bbTR", 3], ["#bbIT", 4]];
+pairs.forEach(([b, f], i) => {
+  const be = $(b), fe = frs[f];
+  const bp = off(be), fp = off(fe);
+  const x1 = off($("#doc")).x + 560 + 4, y1 = bp.y + be.offsetHeight / 2;
+  const x2 = fp.x - 4, y2 = fp.y + fe.offsetHeight / 2;
+  const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  p.setAttribute("d", `M${x1},${y1} C${x1 + 160},${y1} ${x2 - 160},${y2} ${x2},${y2}`);
+  p.setAttribute("fill", "none"); p.setAttribute("stroke", "#8fa8ff"); p.setAttribute("stroke-width", "2"); p.setAttribute("opacity", ".7");
+  wires.appendChild(p);
+  const L = p.getTotalLength();
+  p.style.strokeDasharray = L; p.style.strokeDashoffset = L;
+  const at = T.match + 1.2 + i * 0.55;
+  tl.to(p, { strokeDashoffset: 0, duration: 0.6, ease: "power2.inOut" }, at);
+  tl.to(p, { opacity: 0.18, duration: 0.6 }, at + 1.2);
+});
+frs.forEach((fr, i) => {
+  const v = $(".v", fr);
+  const at = T.match + 1.5 + Math.min(i, 4) * 0.55 + (i === 5 ? 0.6 : 0);
+  tl.fromTo(fr, { backgroundColor: "rgba(143,168,255,0)" }, { backgroundColor: "rgba(143,168,255,.10)", duration: 0.25, yoyo: true, repeat: 1 }, at);
+  type(tl, v, v.dataset.v, at, Math.min(0.9, v.dataset.v.length * 0.035));
+});
+tl.fromTo("#match", { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, duration: 0.7 }, T.match + 5.4);
+tl.fromTo("#match .mg > div", { autoAlpha: 0, y: 12 }, { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.2 }, T.match + 5.7);
+tl.to("#confArc", { strokeDashoffset: 113.1 * 0.03, duration: 1.4, ease: "power2.out" }, T.match + 6.2);
+count(tl, $("#confN"), 0, 97, T.match + 6.2, 1.4, (v) => Math.round(v) + "%");
+capOut(tl, "#capD", T.route - 0.5);
+tl.to(["#doc", "#aibadge", "#wires"], { autoAlpha: 0, x: "-=80", duration: 0.5, ease: "power2.in" }, T.route - 0.6);
+tl.to("#ex", { autoAlpha: 0, x: 80, duration: 0.5, ease: "power2.in" }, T.route - 0.6);
+tl.set("#vision", { autoAlpha: 0 }, T.route + 0.1);
+
+// ===== route =====
+tl.set("#route", { autoAlpha: 1 }, T.route);
+tl.fromTo("#rules", { autoAlpha: 0, x: -60 }, { autoAlpha: 1, x: 0, duration: 0.8 }, T.route);
+tl.fromTo(".rule", { autoAlpha: 0, x: -30 }, { autoAlpha: 1, x: 0, duration: 0.5, stagger: 0.1 }, T.route + 0.3);
+tl.fromTo("#funnel", { autoAlpha: 0, y: -20 }, { autoAlpha: 1, y: 0, duration: 0.6 }, T.route + 0.5);
+tl.fromTo(".lane", { autoAlpha: 0, y: 40 }, { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.12 }, T.route + 0.6);
+tl.fromTo(".footnote", { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.6 }, T.route + 1);
+capIn(tl, "#capE", T.route + 0.4);
+
+// chips stream through the funnel into lanes; matching rule glows
+const fwrap = $("#fchips");
+const laneX = { A: 944 + 140, B: 1244 + 140, C: 1544 + 140 };
+const laneCol = { A: "#3ecf8e", B: "#f5b13d", C: "#8b919b" };
+const pattern = "AAABAAAACAABAAAAACAAAABAAAAAACAAAB";
+const ruleFor = { A: [0, 3], B: [0, 4], C: [5] };
+const extra = { 3: 1, 9: 2, 14: 2, 21: 1, 27: 2 }; // some go through link/vision rules too
+pattern.split("").forEach((k, i) => {
+  const c = document.createElement("div");
+  c.className = "fchip"; c.style.background = laneCol[k];
+  fwrap.appendChild(c);
+  const at = T.route + 1.6 + i * 0.2;
+  tl.fromTo(c, { x: 1355, y: 180, autoAlpha: 0, scale: 0.5 }, { x: 1355, y: 262, autoAlpha: 1, scale: 1, duration: 0.25, ease: "power1.out" }, at);
+  tl.to(c, { x: laneX[k] - 20 + (rnd() - 0.5) * 120, duration: 0.7, ease: "power1.inOut" }, at + 0.25);
+  tl.to(c, { y: 640 - rnd() * 90, duration: 0.7, ease: "power2.in" }, at + 0.25);
+  tl.to(c, { autoAlpha: 0, scale: 0.4, duration: 0.25, ease: "power1.in" }, at + 0.85);
+  const rs = ruleFor[k].concat(extra[i] != null ? [extra[i]] : []);
+  rs.forEach((r) => tl.fromTo(`.rule[data-r="${r}"] .glow`, { autoAlpha: 0.9 }, { autoAlpha: 0, duration: 0.55, ease: "power1.out" }, at + 0.1));
+});
+const flowEnd = T.route + 1.6 + pattern.length * 0.2 + 0.9;
+count(tl, $("#cA"), 0, 212, T.route + 2.4, flowEnd - T.route - 2.4);
+count(tl, $("#cB"), 0, 23, T.route + 2.4, flowEnd - T.route - 2.4);
+count(tl, $("#cC"), 0, 12, T.route + 2.4, flowEnd - T.route - 2.4);
+tl.fromTo("#laneA .fill", { scaleY: 0 }, { scaleY: 0.86, duration: flowEnd - T.route - 2.4, ease: "power2.out" }, T.route + 2.4);
+tl.fromTo("#laneB .fill", { scaleY: 0 }, { scaleY: 0.1, duration: flowEnd - T.route - 2.4, ease: "power2.out" }, T.route + 2.4);
+tl.fromTo("#laneC .fill", { scaleY: 0 }, { scaleY: 0.05, duration: flowEnd - T.route - 2.4, ease: "power2.out" }, T.route + 2.4);
+tl.fromTo("#laneA", { boxShadow: "0 0 0 0 rgba(62,207,142,0)" }, { boxShadow: "0 0 60px 0 rgba(62,207,142,.25)", borderColor: "rgba(62,207,142,.5)", duration: 0.8 }, flowEnd);
+capOut(tl, "#capE", T.result - 0.5);
+tl.to(["#rules", "#funnel", ".lane", ".footnote"], { autoAlpha: 0, y: 30, duration: 0.5, ease: "power2.in", stagger: 0.04 }, T.result - 0.6);
+tl.set("#route", { autoAlpha: 0 }, T.result + 0.1);
+
+// ===== result =====
+tl.set("#result", { autoAlpha: 1 }, T.result);
+tl.set("#stO", { autoAlpha: 0 }, T.result);
+tl.set("#done", { autoAlpha: 0 }, T.result);
+tl.fromTo("#portal", { autoAlpha: 0, y: 40 }, { autoAlpha: 1, y: 0, duration: 0.8 }, T.result);
+tl.fromTo("#portal .prow:not(.head)", { autoAlpha: 0, x: -40 }, { autoAlpha: 1, x: 0, duration: 0.5, stagger: 0.16 }, T.result + 0.5);
+tl.fromTo("#review", { autoAlpha: 0, x: 60 }, { autoAlpha: 1, x: 0, duration: 0.8 }, T.result + 1.4);
+capIn(tl, "#capF", T.result + 0.4);
+const yb = off($("#yes"));
+tl.fromTo("#cursor", { x: 1700, y: 900, autoAlpha: 0 }, { x: yb.x + 200, y: yb.y + 36, autoAlpha: 1, duration: 1.2, ease: "power2.inOut" }, T.result + 3.6);
+tl.to("#cursor", { scale: 0.85, duration: 0.1, yoyo: true, repeat: 1 }, T.result + 4.9);
+tl.to("#yes", { scale: 0.96, duration: 0.1, yoyo: true, repeat: 1 }, T.result + 4.9);
+tl.fromTo("#done", { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.5, ease: "back.out(2)" }, T.result + 5.15);
+tl.to("#stW", { autoAlpha: 0, scale: 0.8, duration: 0.3 }, T.result + 5.4);
+tl.fromTo("#stO", { autoAlpha: 0, scale: 1.3 }, { autoAlpha: 1, scale: 1, duration: 0.5, ease: "back.out(2)" }, T.result + 5.55);
+tl.to("#cursor", { x: 1900, y: 1000, autoAlpha: 0, duration: 1.2, ease: "power2.in" }, T.result + 6.4);
+capOut(tl, "#capF", T.end - 0.5);
+tl.to(["#portal", "#review"], { autoAlpha: 0, scale: 0.96, filter: "blur(6px)", duration: 0.6, ease: "power2.in" }, T.end - 0.6);
+tl.set("#result", { autoAlpha: 0 }, T.end + 0.1);
+
+// ===== end =====
+tl.set("#end", { autoAlpha: 1 }, T.end);
+tl.from("#end .big", { autoAlpha: 0, y: 40, filter: "blur(14px)", duration: 1.0 }, T.end + 0.1);
+tl.from("#end .pill, #end .arr", { autoAlpha: 0, y: 30, duration: 0.6, stagger: 0.15 }, T.end + 0.9);
+tl.from("#end .next", { autoAlpha: 0, y: 14, duration: 0.6 }, T.end + 2.4);
+tl.to({}, { duration: 0.01 }, T.total);
+
+// scene marks stretched to fit the narration (audio/vo-trim durations)
+M.retime(tl, [0, 5.5, 13.2, 19.5, 25.5, 31.5, 43, 55, 65.5, 73], [0, 5.5, 15.8, 28.0, 38.9, 48.7, 60.2, 72.9, 83.4, 90.9]);
+boot(tl);
+</script>
+</body>
+</html>

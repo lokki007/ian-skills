@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Warehouse Receiving Autopilot</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="common.css">
+<style>
+  .scene { position: absolute; inset: 0; visibility: hidden; opacity: 0; }
+  .sh { font-family: var(--marker); color: #1b2a55; display: inline-block; clip-path: inset(0 100% 0 0); }
+
+  /* intro */
+  #intro .title { position: absolute; left: 0; right: 0; top: 150px; text-align: center; font-size: 84px; font-weight: 800; letter-spacing: -0.035em; line-height: 1.08; }
+  #intro .title .l2 { color: var(--gold); }
+  #map { position: absolute; inset: 0; }
+  #wh { position: absolute; left: 740px; top: 560px; width: 440px; height: 150px; display: flex; align-items: center; gap: 18px; padding: 0 24px; border-radius: 22px; background: linear-gradient(180deg, #1d1a10, #12110c); border: 1px solid rgba(207,175,64,.5); box-shadow: 0 0 80px rgba(207,175,64,.18); }
+  #wh svg { width: 74px; height: 74px; flex: none; }
+  #wh b { display: block; font-size: 22px; }
+  #wh span { display: block; font-size: 15px; color: var(--muted); font-weight: 600; margin-top: 3px; }
+  .whring { position: absolute; left: 740px; top: 560px; width: 440px; height: 150px; border-radius: 22px; border: 1px solid rgba(207,175,64,.5); }
+  .origin { position: absolute; display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+  .origin i { width: 12px; height: 12px; border-radius: 50%; background: var(--ai); box-shadow: 0 0 14px var(--ai); flex: none; }
+  .truck { position: absolute; left: 0; top: 0; width: 56px; height: 32px; }
+  #routes path { fill: none; stroke: rgba(143,168,255,.35); stroke-width: 2; stroke-dasharray: 6 8; }
+  #opening { position: absolute; left: 0; right: 0; top: 760px; text-align: center; font-family: var(--mono); font-size: 18px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+  #opening b { color: var(--gold); font-weight: 600; }
+
+  /* today */
+  .tcard { position: absolute; top: 160px; width: 328px; height: 560px; padding: 24px; }
+  .tcard .n { font-family: var(--mono); color: var(--gold); font-size: 15px; letter-spacing: .14em; }
+  .tcard .tt { font-size: 24px; font-weight: 800; margin-top: 8px; line-height: 1.2; letter-spacing: -0.01em; }
+  .tcard .ill { position: absolute; left: 24px; right: 24px; top: 150px; height: 300px; border-radius: 16px; background: rgba(255,255,255,.025); border: 1px dashed var(--line-2); overflow: hidden; }
+  .tcard .ft { position: absolute; left: 24px; right: 24px; bottom: 24px; font-size: 16px; color: var(--muted); font-weight: 600; line-height: 1.4; }
+  .tcard.hot { border-color: rgba(255,107,107,.4); }
+  .tcard.hot .ft { color: var(--bad); }
+  .mini { position: absolute; background: #f3efe6; border-radius: 5px; box-shadow: 0 14px 30px rgba(0,0,0,.5); padding: 12px 12px; }
+  .mini i { display: block; height: 6px; border-radius: 3px; background: #cdc6b6; margin: 7px 0; }
+  .mini .hd2 { height: 9px; background: #2a3344; width: 70%; border-radius: 3px; margin-bottom: 10px; }
+  .mini .row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd5c5; height: 30px; }
+  .mini .row i { width: 55%; margin: 0; }
+  .mini .row .sh { font-size: 20px; }
+  #printer { position: absolute; left: 50%; top: 150px; width: 200px; height: 90px; margin-left: -100px; border-radius: 14px; background: #2a2e36; border: 1px solid #3a3f48; }
+  #printer::before { content: ""; position: absolute; left: 30px; right: 30px; top: 22px; height: 8px; border-radius: 4px; background: #0d0f12; }
+  #printer::after { content: ""; position: absolute; right: 18px; bottom: 16px; width: 10px; height: 10px; border-radius: 50%; background: var(--ok); }
+  #phone { position: absolute; left: 50%; top: 22px; width: 150px; height: 262px; margin-left: -75px; border-radius: 24px; background: #0d0f12; border: 3px solid #3a3f48; overflow: hidden; }
+  #phone .scr { position: absolute; inset: 8px; border-radius: 16px; background: linear-gradient(160deg, #4a3f30, #221d16); overflow: hidden; }
+  #phone .flash { position: absolute; inset: 0; background: #fff; opacity: 0; }
+  #monitor { position: absolute; left: 22px; right: 22px; top: 40px; height: 170px; border-radius: 10px; background: #0d0f12; border: 2px solid #3a3f48; padding: 14px; }
+  #monitor .fld { display: flex; align-items: center; gap: 10px; height: 30px; font-family: var(--mono); font-size: 14px; color: var(--muted); }
+  #monitor .fld span { flex: 1; height: 24px; border-radius: 5px; background: #1b1f26; color: var(--text); padding: 3px 8px; }
+  #monitor::after { content: ""; position: absolute; left: 50%; bottom: -26px; width: 70px; height: 24px; margin-left: -35px; background: #2a2e36; clip-path: polygon(20% 0, 80% 0, 100% 100%, 0 100%); }
+  #hours { position: absolute; left: 0; right: 0; bottom: 24px; text-align: center; font-family: var(--mono); font-size: 15px; color: var(--bad); }
+  #dot { position: absolute; top: 152px; left: 0; width: 12px; height: 12px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 16px var(--gold); }
+
+  /* photo / read */
+  #photoWrap { position: absolute; left: 96px; top: 140px; width: 720px; height: 660px; border-radius: 22px; overflow: hidden; background: radial-gradient(ellipse at 30% 20%, #5a4733, #2a2017 60%, #15100b); border: 1px solid var(--line); }
+  #photoWrap .clean { position: absolute; inset: 0; background: linear-gradient(180deg, var(--panel-2), var(--panel)); opacity: 0; }
+  #paper { position: absolute; left: 70px; top: 30px; width: 580px; height: 600px; background: #f5f2ea; color: #1d1b17; border-radius: 4px; box-shadow: 0 40px 70px rgba(0,0,0,.55); }
+  #paper .glare { position: absolute; inset: 0; background: linear-gradient(115deg, rgba(255,255,255,0) 30%, rgba(255,250,235,.45) 45%, rgba(255,255,255,0) 60%), linear-gradient(0deg, rgba(60,40,20,.35), rgba(0,0,0,0) 50%); pointer-events: none; }
+  #paper .p-hd { position: absolute; left: 20px; right: 20px; top: 16px; display: flex; justify-content: space-between; align-items: baseline; border-bottom: 3px solid #1d1b17; padding-bottom: 10px; }
+  #paper .p-hd b { font-size: 22px; letter-spacing: .04em; white-space: nowrap; }
+  #paper .p-hd span { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; color: #6d6656; }
+  #paper .meta { position: absolute; left: 20px; right: 20px; top: 76px; display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 10px; }
+  #paper .meta > div { border: 1px solid #cfc7b5; border-radius: 4px; height: 66px; padding: 6px 10px; position: relative; }
+  #paper .lab2 { font-family: var(--mono); font-size: 10px; letter-spacing: .12em; color: #7d7564; text-transform: uppercase; }
+  #paper .pv { font-weight: 700; font-size: 15px; margin-top: 4px; }
+  #paper .meta .sh { font-size: 26px; margin-top: 0; }
+  #paper table { position: absolute; left: 20px; top: 158px; width: 540px; border-collapse: collapse; }
+  #paper th { height: 30px; text-align: left; font-family: var(--mono); font-size: 10px; letter-spacing: .12em; color: #7d7564; font-weight: 500; border-bottom: 2px solid #1d1b17; }
+  #paper td { height: 64px; border-bottom: 1px solid #d4ccba; font-size: 15px; font-weight: 600; vertical-align: middle; }
+  #paper td.c { text-align: center; }
+  #paper td .sh { font-size: 30px; }
+  #paper td .sh.sm { font-size: 17px; line-height: 1.05; }
+  #paper .sig { position: absolute; left: 20px; right: 20px; top: 500px; height: 80px; display: flex; align-items: flex-end; gap: 16px; border-bottom: 1px solid #1d1b17; padding-bottom: 6px; }
+  #paper .sig .sh { font-size: 40px; transform: rotate(-6deg); }
+  #paper .smudge { position: absolute; left: 330px; top: 474px; width: 50px; height: 50px; border-radius: 50%; background: radial-gradient(circle, rgba(40,55,110,.55), transparent 70%); filter: blur(3px); }
+  .rb { position: absolute; border: 2.5px solid var(--ai); border-radius: 8px; background: rgba(143,168,255,.10); }
+  .rb.amb { border-color: var(--warn); background: rgba(245,177,61,.12); }
+  #scan { position: absolute; left: 0; right: 0; height: 140px; top: -140px; background: linear-gradient(180deg, transparent, rgba(143,168,255,.25) 85%, rgba(183,156,255,.85)); mix-blend-mode: multiply; }
+  #paper .clip { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  #arrive { position: absolute; left: 96px; top: 140px; width: 720px; }
+  .mailchip { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-radius: 16px; background: var(--panel-2); border: 1px solid var(--line-2); font-weight: 700; font-size: 17px; }
+  .mailchip .s2 { color: var(--muted); font-size: 14px; font-weight: 600; }
+  #detect { position: absolute; left: 96px; top: 100px; }
+  #cleaned { position: absolute; left: 96px; top: 100px; }
+
+  #readp, #recp { left: 880px; top: 140px; width: 944px; }
+  .rmeta { display: flex; gap: 10px; padding: 16px 24px 6px; }
+  .rt { display: grid; align-items: center; height: 72px; padding: 0 24px; border-top: 1px solid var(--line); font-size: 18px; font-weight: 700; }
+  #readp .rt { grid-template-columns: 290px 150px 230px 1fr; }
+  #recp .rt { grid-template-columns: 290px 150px 150px 1fr; }
+  .rt.head { height: 46px; font-family: var(--mono); font-size: 12px; letter-spacing: .14em; color: var(--dim); font-weight: 500; text-transform: uppercase; }
+  .rt .rd { font-family: var(--marker); font-size: 26px; color: #c9d5ff; font-weight: 400; }
+  .rt .nt { font-family: var(--marker); font-size: 18px; color: #c9d5ff; font-weight: 400; }
+  .rt .dim { color: var(--dim); font-weight: 500; }
+  .cf { display: flex; align-items: center; gap: 12px; }
+  .cf .bar2 { flex: 1; height: 8px; border-radius: 5px; background: rgba(255,255,255,.08); overflow: hidden; }
+  .cf .bar2 i { display: block; height: 100%; border-radius: 5px; background: var(--ok); transform-origin: left; transform: scaleX(0); }
+  .cf .pc { font-family: var(--mono); font-size: 15px; width: 46px; text-align: right; }
+  .rt.amb .rd { color: var(--warn); }
+  .rt.amb .bar2 i { background: var(--warn); }
+  .rt.amb .pc { color: var(--warn); }
+  .rt .num { font-family: var(--mono); font-size: 20px; }
+  .rt .num.mk { font-family: var(--marker); color: #c9d5ff; font-weight: 400; font-size: 24px; }
+  .srcb { margin-left: auto; }
+  .sum { display: flex; gap: 10px; padding: 18px 24px 22px; border-top: 1px solid var(--line); }
+
+  /* route */
+  #rules { left: 96px; top: 140px; width: 820px; height: 650px; }
+  .rule { display: grid; grid-template-columns: 34px 1fr 30px 1fr; align-items: center; gap: 12px; height: 104px; padding: 0 22px; margin: 12px 14px 0; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.015); font-size: 18px; font-weight: 700; position: relative; }
+  .rule .no { font-family: var(--mono); color: var(--dim); font-size: 14px; }
+  .rule small { display: block; font-family: var(--mono); font-size: 11px; letter-spacing: .14em; color: var(--dim); margin-bottom: 4px; font-weight: 500; }
+  .rule .arrow { color: var(--gold); font-size: 20px; text-align: center; }
+  .rule .then { color: var(--muted); }
+  .rule .glow { position: absolute; inset: -1px; border-radius: 14px; border: 1.5px solid var(--gold); box-shadow: 0 0 30px rgba(207,175,64,.25), inset 0 0 30px rgba(207,175,64,.08); opacity: 0; }
+  .out { position: absolute; left: 960px; width: 864px; height: 134px; display: grid; grid-template-columns: 64px 1fr auto; gap: 20px; align-items: center; padding: 0 26px; }
+  .out .ic { width: 64px; height: 64px; border-radius: 18px; display: grid; place-items: center; font-size: 28px; font-weight: 800; }
+  .out .ot { font-size: 23px; font-weight: 800; letter-spacing: -0.01em; }
+  .out .os { font-size: 16px; color: var(--muted); font-weight: 600; margin-top: 4px; }
+
+  /* review + portal */
+  #review { left: 96px; top: 140px; width: 640px; height: 650px; }
+  .crop { margin: 20px 24px 0; height: 220px; border-radius: 14px; background: #efe9db; position: relative; overflow: hidden; border: 1px solid var(--line); }
+  .crop .cl { position: absolute; left: 22px; top: 18px; font-family: var(--mono); font-size: 12px; letter-spacing: .12em; color: #7d7564; }
+  .crop .exp { position: absolute; left: 22px; top: 86px; font-size: 22px; font-weight: 700; color: #1d1b17; }
+  .crop .big7 { position: absolute; left: 270px; top: 18px; font-family: var(--marker); font-size: 150px; line-height: 1; color: #1b2a55; transform: rotate(-5deg); }
+  .crop .sm2 { position: absolute; left: 300px; top: 30px; width: 110px; height: 120px; border-radius: 50%; background: radial-gradient(circle at 40% 40%, rgba(40,55,110,.5), transparent 68%); filter: blur(4px); }
+  .crop .bb { position: absolute; left: 252px; top: 22px; width: 150px; height: 176px; border: 2.5px solid var(--warn); border-radius: 12px; }
+  .q { margin: 22px 26px 0; font-size: 27px; font-weight: 800; letter-spacing: -0.01em; }
+  .ev { margin: 10px 26px 0; font-size: 17px; color: var(--muted); font-weight: 600; line-height: 1.5; }
+  .ev b { color: var(--ai); }
+  .btns { display: flex; gap: 12px; margin: 24px 26px 0; }
+  .btn { flex: 1; height: 64px; border-radius: 14px; display: grid; place-items: center; font-weight: 800; font-size: 22px; border: 1px solid var(--line-2); }
+  .btn.pri { background: var(--gold); color: #17140a; border-color: var(--gold); flex: 1.4; }
+  #done { position: absolute; left: 26px; right: 26px; bottom: 24px; height: 64px; border-radius: 14px; background: var(--ok-soft); border: 1px solid rgba(62,207,142,.4); color: var(--ok); display: flex; align-items: center; justify-content: center; gap: 12px; font-weight: 800; font-size: 19px; }
+  #cursor { position: absolute; left: 0; top: 0; width: 34px; height: 34px; z-index: 60; filter: drop-shadow(0 6px 10px rgba(0,0,0,.6)); }
+  #portal { left: 776px; top: 140px; width: 1048px; height: 650px; }
+  .ph2 { padding: 22px 28px 14px; display: flex; align-items: baseline; gap: 16px; }
+  .ph2 .city { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; }
+  .ph2 .open { color: var(--muted); font-weight: 600; font-size: 17px; }
+  .kpis { display: grid; grid-template-columns: 300px 1fr; gap: 24px; padding: 6px 28px 18px; align-items: center; }
+  .ringbox { display: flex; align-items: center; gap: 20px; }
+  .ringbox svg { width: 120px; height: 120px; transform: rotate(-90deg); }
+  .ringbox .rn { font-size: 40px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .ringbox .rl { color: var(--muted); font-size: 15px; font-weight: 600; }
+  .ready .rl2 { display: flex; justify-content: space-between; font-weight: 700; font-size: 17px; margin-bottom: 10px; }
+  .ready .rl2 span { color: var(--gold); font-family: var(--mono); }
+  .ready .track { height: 14px; border-radius: 8px; background: rgba(255,255,255,.07); overflow: hidden; }
+  .ready .track i { display: block; height: 100%; border-radius: 8px; background: linear-gradient(90deg, #a88b25, var(--gold)); transform-origin: left; transform: scaleX(0); }
+  .ready .sub3 { margin-top: 10px; color: var(--muted); font-size: 15px; font-weight: 600; }
+  .prow { display: grid; grid-template-columns: 280px 260px 1fr 180px; align-items: center; height: 66px; padding: 0 28px; border-top: 1px solid var(--line); font-size: 17px; font-weight: 700; }
+  .prow.head { height: 42px; font-family: var(--mono); font-size: 12px; letter-spacing: .14em; color: var(--dim); font-weight: 500; text-transform: uppercase; }
+  .prow .sub { color: var(--muted); font-weight: 600; }
+  .st { position: relative; height: 34px; }
+  .st .chip { position: absolute; left: 0; top: 0; }
+
+  /* end */
+  #end .big { position: absolute; left: 0; right: 0; top: 250px; text-align: center; font-size: 92px; font-weight: 800; letter-spacing: -0.035em; }
+  #end .big em { font-style: normal; color: var(--gold); }
+  #end .flow { position: absolute; left: 0; right: 0; top: 440px; display: flex; justify-content: center; align-items: center; gap: 18px; }
+  #end .pill { padding: 20px 26px; border-radius: 18px; background: var(--panel); border: 1px solid var(--line-2); font-size: 22px; font-weight: 750; }
+  #end .pill b { display: block; font-family: var(--mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 6px; }
+  #end .arr { color: var(--dim); font-size: 28px; }
+  #end .one { position: absolute; left: 0; right: 0; top: 600px; text-align: center; font-size: 30px; font-weight: 750; }
+  #end .need { position: absolute; left: 50%; top: 680px; width: 1240px; margin-left: -620px; padding: 22px 30px; border-radius: 18px; border: 1px dashed rgba(207,175,64,.4); background: rgba(207,175,64,.05); display: flex; gap: 26px; align-items: center; justify-content: center; }
+  #end .need .nk { font-family: var(--mono); font-size: 14px; letter-spacing: .16em; color: var(--gold); text-transform: uppercase; white-space: nowrap; }
+  #end .need .ni { font-size: 18px; font-weight: 700; color: var(--text); white-space: nowrap; }
+  #end .need .ni::before { content: "→ "; color: var(--dim); }
+</style>
+</head>
+<body>
+<div id="viewport"><div id="stage">
+  <div class="bg">
+    <div class="bg-grid" id="grid"></div>
+    <div class="bg-glow" id="glowA" style="left:-200px;top:-260px;width:900px;height:700px;background:#2a2410"></div>
+    <div class="bg-glow" id="glowB" style="right:-260px;bottom:-300px;width:1000px;height:800px;background:#141a33"></div>
+    <div class="bg-vignette"></div>
+  </div>
+
+  <div class="brandmark" id="brand"><span class="dot"></span>Fernbrook<span class="sep">/</span><span class="sub">Warehouse receiving autopilot</span></div>
+  <div class="chapters" id="chap"><div class="ch"><i></i></div><div class="ch"><i></i></div><div class="ch"><i></i></div><div class="ch"><i></i></div><div class="ch"><i></i></div><div class="ch"><i></i></div></div>
+
+  <!-- intro -->
+  <section class="scene" id="intro">
+    <div class="title"><div class="l1">The equipment shows up weeks early.</div><div class="l2">Someone has to check it in.</div></div>
+    <div id="map">
+      <svg id="routes" viewBox="0 0 1920 1080" style="position:absolute;inset:0;width:1920px;height:1080px">
+        <path id="p0" d="M150,520 C420,500 650,560 900,635"/>
+        <path id="p1" d="M330,930 C560,900 760,780 900,670"/>
+        <path id="p2" d="M1770,520 C1500,500 1270,560 1020,635"/>
+        <path id="p3" d="M1600,940 C1400,900 1180,780 1020,670"/>
+        <path id="p4" d="M640,1010 C760,900 860,780 930,650"/>
+        <path id="p5" d="M1300,1010 C1180,900 1060,780 990,650"/>
+      </svg>
+      <div class="origin" style="left:120px;top:478px"><i></i>Northline · Dallas, TX</div>
+      <div class="origin" style="left:300px;top:948px"><i></i>Atlas · Columbus, OH</div>
+      <div class="origin" style="left:1590px;top:478px"><i></i>Summit · Milwaukee, WI</div>
+      <div class="origin" style="left:1480px;top:958px"><i></i>Prairie · Des Moines, IA</div>
+      <div class="origin" style="left:560px;top:1026px"><i></i>Keystone · Erie, PA</div>
+      <div class="origin" style="left:1230px;top:1026px"><i></i>Coastal · Charleston, SC</div>
+      <div id="trucks"></div>
+      <div class="whring" id="wr1"></div><div class="whring" id="wr2"></div>
+      <div id="wh">
+        <svg viewBox="0 0 64 64" fill="none"><path d="M6 28 32 12l26 16v28H6z" fill="#2b2611" stroke="#cfaf40" stroke-width="2.5" stroke-linejoin="round"/><rect x="18" y="34" width="28" height="22" fill="#14120a" stroke="#cfaf40" stroke-width="2"/><path d="M18 40h28M18 46h28M18 52h28" stroke="#cfaf40" stroke-width="1.5" opacity=".6"/></svg>
+        <div><b>Riverbend Storage</b><span>Riverbend, OH · holding until January</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- today -->
+  <section class="scene" id="today">
+    <div class="panel tcard" style="left:96px"><div class="n">01</div><div class="tt">We email the warehouse a receiving form</div>
+      <div class="ill"><div class="mini" id="pdfOut" style="left:84px;top:50px;width:110px;height:140px"><div class="hd2"></div><i></i><i style="width:70%"></i><i></i><i style="width:80%"></i><i></i></div></div>
+      <div class="ft">A PDF per delivery, per warehouse</div></div>
+    <div class="panel tcard" style="left:446px"><div class="n">02</div><div class="tt">They print it out</div>
+      <div class="ill"><div class="mini" id="printOut" style="left:84px;top:40px;width:110px;height:140px"><div class="hd2"></div><i></i><i style="width:70%"></i><i></i><i style="width:80%"></i></div><div id="printer"></div></div>
+      <div class="ft">Paper on a clipboard at the dock</div></div>
+    <div class="panel tcard" style="left:796px"><div class="n">03</div><div class="tt">Fill it in with a Sharpie</div>
+      <div class="ill"><div class="mini" style="left:30px;top:24px;width:220px;height:250px;transform:rotate(-2deg)"><div class="hd2"></div>
+        <div class="row"><i></i><span class="sh s3">12</span></div><div class="row"><i></i><span class="sh s3">2</span></div><div class="row"><i></i><span class="sh s3">3</span></div><div class="row"><i></i><span class="sh s3">7?</span></div><div class="row" style="border:0"><span class="sh s3" style="font-size:16px">1 box crushed</span></div></div></div>
+      <div class="ft">Handwriting, smudges, arrows, notes in the margins</div></div>
+    <div class="panel tcard" style="left:1146px"><div class="n">04</div><div class="tt">Snap a photo, email it back</div>
+      <div class="ill"><div id="phone"><div class="scr"><div class="mini" style="left:22px;top:40px;width:96px;height:130px;transform:rotate(-9deg) skewX(-4deg)"><div class="hd2"></div><i></i><i></i><i style="width:60%"></i><i></i></div></div><div class="flash" id="flash"></div></div></div>
+      <div class="ft">Crooked, shadowed, sometimes blurry</div></div>
+    <div class="panel tcard hot" style="left:1496px"><div class="n" style="color:var(--bad)">05</div><div class="tt">We pay someone to retype it</div>
+      <div class="ill"><div id="monitor"><div class="fld">Qty<span id="ty1"></span></div><div class="fld">Qty<span id="ty2"></span></div><div class="fld">Note<span id="ty3"></span></div><div class="fld">Qty<span id="ty4"></span></div></div><div id="hours">paid by the hour · every delivery</div></div>
+      <div class="ft">Slow, error-prone, and nobody wants this job</div></div>
+    <div id="dot"></div>
+  </section>
+
+  <!-- read -->
+  <section class="scene" id="read">
+    <div id="photoWrap">
+      <div class="clean" id="clean"></div>
+      <div id="paper">
+        <div class="p-hd"><b>RECEIVING REPORT</b><span>FERNBROOK SERVICES · PLEASE EMAIL BACK</span></div>
+        <div class="meta">
+          <div><div class="lab2">Project</div><div class="pv">Riverbend, OH<br><span style="font-weight:500;font-size:13px">Bluebird Burger Co.</span></div></div>
+          <div><div class="lab2">Date received</div><span class="sh r">12/11</span></div>
+          <div><div class="lab2">Received by</div><span class="sh r">J. Smith</span></div>
+        </div>
+        <table>
+          <tr><th style="width:220px">Item</th><th style="width:60px;text-align:center">Exp.</th><th style="width:80px;text-align:center">Rec'd</th><th>Condition / notes</th></tr>
+          <tr><td>Walk-in cooler panel kit</td><td class="c">12</td><td class="c"><span class="sh r">12</span></td><td><span class="sh r sm">ok</span></td></tr>
+          <tr><td>Reach-in freezer, 2 door</td><td class="c">2</td><td class="c"><span class="sh r">2</span></td><td><span class="sh r sm">ok</span></td></tr>
+          <tr><td>Fryer, 2 basket</td><td class="c">2</td><td class="c"><span class="sh r">2</span></td><td><span class="sh r sm">1 box crushed<br>corner</span></td></tr>
+          <tr><td>Prep table, 60"</td><td class="c">4</td><td class="c"><span class="sh r">3</span></td><td><span class="sh r sm">1 missing!</span></td></tr>
+          <tr><td>Hood filters</td><td class="c">8</td><td class="c"><span class="sh r">7</span></td><td></td></tr>
+        </table>
+        <div class="smudge"></div>
+        <div class="sig"><span class="lab2" style="margin-bottom:8px">Signature</span><span class="sh r">J Smith</span></div>
+        <div class="rb" id="b0" style="left:241px;top:72px;width:166px;height:74px"></div>
+        <div class="rb" id="b1" style="left:408px;top:72px;width:166px;height:74px"></div>
+        <div class="rb lrow" style="left:296px;top:194px;width:270px;height:58px"></div>
+        <div class="rb lrow" style="left:296px;top:258px;width:270px;height:58px"></div>
+        <div class="rb lrow" style="left:296px;top:322px;width:270px;height:58px"></div>
+        <div class="rb lrow" style="left:296px;top:386px;width:270px;height:58px"></div>
+        <div class="rb lrow amb" style="left:296px;top:450px;width:90px;height:58px"></div>
+        <div class="clip"><div id="scan"></div></div>
+        <div class="glare" id="glare"></div>
+      </div>
+    </div>
+    <div id="arrive"><div class="mailchip"><div class="av" style="background:#e7e3d8">K</div><div><div>Riverbend Storage</div><div class="s2">Fwd: receiving 12/11 · IMG_2231.jpg</div></div><span class="att" style="margin-left:auto">▧ 1 photo</span></div></div>
+    <div id="detect" class="chip gold">◆ Rules: warehouse receipt → read it</div>
+    <div id="cleaned" class="chip ai">☾ Straightened · shadows removed · matched to our form</div>
+
+    <div class="panel" id="readp">
+      <div class="panel-h"><span style="color:var(--ai)">☾</span> What the AI read<span class="meta">from IMG_2231.jpg</span></div>
+      <div class="rmeta"><span class="chip ai" id="m0">Received Dec 11</span><span class="chip ai" id="m1">By J. Smith</span><span class="chip ai" id="m2">Signed</span></div>
+      <div class="rt head"><span>Item</span><span>Count</span><span>Note</span><span>Confidence</span></div>
+      <div class="rt rr"><span>Walk-in cooler panel kit</span><span class="rd">12</span><span class="nt">ok</span><span class="cf"><span class="bar2"><i data-v=".99"></i></span><span class="pc">99%</span></span></div>
+      <div class="rt rr"><span>Reach-in freezer, 2 door</span><span class="rd">2</span><span class="nt">ok</span><span class="cf"><span class="bar2"><i data-v=".99"></i></span><span class="pc">99%</span></span></div>
+      <div class="rt rr"><span>Fryer, 2 basket</span><span class="rd">2</span><span class="nt">1 box crushed corner</span><span class="cf"><span class="bar2"><i data-v=".95"></i></span><span class="pc">95%</span></span></div>
+      <div class="rt rr"><span>Prep table, 60"</span><span class="rd">3</span><span class="nt">1 missing!</span><span class="cf"><span class="bar2"><i data-v=".97"></i></span><span class="pc">97%</span></span></div>
+      <div class="rt rr amb"><span>Hood filters</span><span class="rd">7 or 1?</span><span class="nt dim">—</span><span class="cf"><span class="bar2"><i data-v=".62"></i></span><span class="pc">62%</span></span></div>
+    </div>
+
+    <div class="panel" id="recp">
+      <div class="panel-h">Checked against what shipped<span class="chip gold srcb">↗ from the shipping inbox</span></div>
+      <div class="rt head"><span>Item</span><span>Shipped</span><span>Received</span><span>Result</span></div>
+      <div class="rt cr"><span>Walk-in cooler panel kit</span><span class="num">12</span><span class="num mk">12</span><span><span class="chip ok">✓ Match</span></span></div>
+      <div class="rt cr"><span>Reach-in freezer, 2 door</span><span class="num">2</span><span class="num mk">2</span><span><span class="chip ok">✓ Match</span></span></div>
+      <div class="rt cr"><span>Fryer, 2 basket</span><span class="num">2</span><span class="num mk">2</span><span><span class="chip bad">Damaged · 1 box</span></span></div>
+      <div class="rt cr"><span>Prep table, 60"</span><span class="num">4</span><span class="num mk">3</span><span><span class="chip bad">Short 1</span></span></div>
+      <div class="rt cr"><span>Hood filters</span><span class="num">8</span><span class="num mk" style="color:var(--warn)">7?</span><span><span class="chip warn">Needs a glance</span></span></div>
+      <div class="sum" id="sum"><span class="chip ok">2 clean</span><span class="chip bad">1 damaged</span><span class="chip bad">1 short</span><span class="chip warn">1 to confirm</span><span class="chip grey" style="margin-left:auto">0 retyped by hand</span></div>
+    </div>
+  </section>
+
+  <!-- route -->
+  <section class="scene" id="route">
+    <div class="panel" id="rules">
+      <div class="panel-h"><span style="color:var(--gold)">◆</span> Rules engine · receiving rules<span class="meta">our rules, in plain words</span></div>
+      <div class="rule" data-r="0"><span class="no">01</span><span><small>IF</small>Every line matches</span><span class="arrow">→</span><span class="then" style="color:var(--ok)"><small>THEN</small>Post the receipt to the portal</span><span class="glow"></span></div>
+      <div class="rule" data-r="1"><span class="no">02</span><span><small>IF</small>Damage is noted</span><span class="arrow">→</span><span class="then"><small>THEN</small>Draft a claim, attach the photo</span><span class="glow"></span></div>
+      <div class="rule" data-r="2"><span class="no">03</span><span><small>IF</small>Something is short</span><span class="arrow">→</span><span class="then"><small>THEN</small>Alert the PM + manufacturer</span><span class="glow"></span></div>
+      <div class="rule" data-r="3"><span class="no">04</span><span><small>IF</small>Handwriting is unclear</span><span class="arrow">→</span><span class="then" style="color:var(--warn)"><small>THEN</small>Ask a person, show the crop</span><span class="glow"></span></div>
+      <div class="rule" data-r="4"><span class="no">05</span><span><small>ALWAYS</small>Keep the original photo</span><span class="arrow">→</span><span class="then"><small>THEN</small>Linked to every line it touched</span><span class="glow"></span></div>
+    </div>
+    <div class="panel out" style="top:150px"><div class="ic" style="background:var(--ok-soft);color:var(--ok)">✓</div><div><div class="ot">Receipt posted to the portal</div><div class="os">Walk-in kit 12/12 · Freezer 2/2 · photo attached</div></div><span class="chip ok">Done</span></div>
+    <div class="panel out" style="top:302px"><div class="ic" style="background:var(--bad-soft);color:var(--bad)">⚑</div><div><div class="ot">Damage claim drafted</div><div class="os">Atlas Kitchen · fryer box crushed · photo + PO attached</div></div><span class="chip bad">Ready to send</span></div>
+    <div class="panel out" style="top:454px"><div class="ic" style="background:var(--bad-soft);color:var(--bad)">!</div><div><div class="ot">Shortage flagged</div><div class="os">Prep table 3 of 4 · PM and manufacturer notified</div></div><span class="chip bad">Notified</span></div>
+    <div class="panel out" style="top:606px"><div class="ic" style="background:var(--warn-soft);color:var(--warn)">?</div><div><div class="ot">Quick check queued</div><div class="os">Hood filters — is it a 7 or a 1?</div></div><span class="chip warn">1 tap</span></div>
+  </section>
+
+  <!-- review + portal -->
+  <section class="scene" id="result">
+    <div class="panel" id="review">
+      <div class="panel-h">Quick check <span class="chip warn" style="margin-left:6px">Hood filters</span><span class="meta">Riverbend Storage</span></div>
+      <div class="crop"><div class="cl">CROP · ROW 5 · REC'D</div><div class="exp">Shipped: 8</div><div class="sm2"></div><div class="big7">7</div><div class="bb"></div></div>
+      <div class="q">How many hood filters arrived?</div>
+      <div class="ev"><b>AI reads 7 (62%)</b> — the top stroke is faint, so it could be a 1. Shipped was 8.</div>
+      <div class="btns"><div class="btn pri" id="yes">7</div><div class="btn">1</div><div class="btn">Other</div></div>
+      <div id="done">✓ Logged 7 of 8 · shortage added · 4 seconds</div>
+    </div>
+    <div class="panel" id="portal">
+      <div class="ph2"><span class="city">Riverbend, OH</span><span class="open">Bluebird Burger Co. · receiving at Riverbend Storage</span></div>
+      <div class="kpis">
+        <div class="ringbox"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" stroke="rgba(255,255,255,.08)" stroke-width="4.5" fill="none"/><circle id="ringArc" cx="22" cy="22" r="18" stroke="#3ecf8e" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="113.1"/></svg><div><div class="rn"><span id="rcv">0</span><span style="color:var(--dim)">/44</span></div><div class="rl">deliveries checked in</div></div></div>
+        <div class="ready"><div class="rl2">Ready to open<span id="rdy">0%</span></div><div class="track"><i id="rdyBar"></i></div><div class="sub3">3 open issues · all with owners · none waiting on data entry</div></div>
+      </div>
+      <div class="prow head"><span>Delivery</span><span>Received</span><span>Issues</span><span>Status</span></div>
+      <div class="prow"><span>Northline Refrigeration</span><span class="sub">14 of 14</span><span class="sub">—</span><span class="st"><span class="chip ok">Checked in</span></span></div>
+      <div class="prow"><span>Atlas Kitchen Equip.</span><span class="sub">5 of 6</span><span class="sub">1 damaged · 1 short</span><span class="st"><span class="chip bad">Claim open</span></span></div>
+      <div class="prow"><span>Summit Hoods</span><span class="sub" id="sumRec">— of 8</span><span class="sub" id="sumIss">awaiting check</span><span class="st"><span class="chip warn" id="stW">Needs check</span><span class="chip bad" id="stO">Short 1</span></span></div>
+      <div class="prow"><span>Coastal Smallwares</span><span class="sub">143 of 143</span><span class="sub">—</span><span class="st"><span class="chip ok">Checked in</span></span></div>
+      <div class="prow"><span>Prairie Seating Co.</span><span class="sub">arrives Dec 16</span><span class="sub">—</span><span class="st"><span class="chip ai">In transit</span></span></div>
+    </div>
+    <svg id="cursor" viewBox="0 0 24 24"><path d="M4 2l16 9.5-7 1.6-3.6 6.9z" fill="#fff" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/></svg>
+  </section>
+
+  <!-- end -->
+  <section class="scene" id="end">
+    <div class="big">From Sharpie to system, <em>in minutes.</em></div>
+    <div class="flow">
+      <div class="pill"><b style="color:var(--ai)">Shipped</b>email read</div><span class="arr">→</span>
+      <div class="pill"><b style="color:var(--ai)">In transit</b>tracking matched</div><span class="arr">→</span>
+      <div class="pill"><b style="color:var(--gold)">Received</b>Sharpie read</div><span class="arr">→</span>
+      <div class="pill"><b style="color:var(--ok)">Ready to open</b>portal up to date</div>
+    </div>
+    <div class="one">One watchdog for every inbound email. People only confirm.</div>
+    <div class="need"><span class="nk">To pilot it</span><span class="ni">Shipping inbox access</span><span class="ni">Our receiving form</span><span class="ni">Portal API, or a simple receiving view</span></div>
+  </section>
+
+  <!-- captions -->
+  <div class="cap" id="capT"><div class="kicker">01 <b>/ Today</b></div><div class="h">PDF out, Sharpie in, a photo back —<br><em>then someone retypes it all by hand.</em></div></div>
+  <div class="cap" id="capR1"><div class="kicker">02 <b>/ Read</b></div><div class="h">The photo lands in the inbox. The watchdog knows<br>it's a <em>warehouse receipt</em> — and which project it's for.</div></div>
+  <div class="cap" id="capR2"><div class="kicker">02 <b>/ Read</b></div><div class="h"><span class="ai">The AI</span> straightens it and reads the Sharpie,<br>line by line, with a confidence score.</div></div>
+  <div class="cap" id="capC"><div class="kicker">03 <b>/ Check</b></div><div class="h">Then it checks every count against<br><em>what the manufacturer said they shipped.</em></div></div>
+  <div class="cap" id="capE"><div class="kicker">04 <b>/ Act</b></div><div class="h"><em>Rules engine</em> decides what happens next:<br>post it, claim it, chase it — or ask a person.</div></div>
+  <div class="cap" id="capF"><div class="kicker">05 <b>/ Result</b></div><div class="h">A person spends <em>seconds</em> confirming,<br>not hours retyping.</div></div>
+</div></div>
+
+<script src="vendor/gsap.min.js"></script>
+<script src="vendor/MotionPathPlugin.min.js"></script>
+<script src="common.js"></script>
+<script>
+gsap.registerPlugin(MotionPathPlugin);
+const { $, $$, capIn, capOut, type, count, chapters, boot } = M;
+const off = (el) => { let x = 0, y = 0; while (el && el.id !== "stage") { x += el.offsetLeft; y += el.offsetTop; el = el.offsetParent; } return { x, y }; };
+const reveal = (tl, els, at, dur = 0.35, stagger = 0.12) =>
+  tl.fromTo(els, { clipPath: "inset(0% 100% 0% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: dur, ease: "power1.inOut", stagger }, at);
+
+// trucks
+const truckSVG = `<svg viewBox="0 0 56 32"><rect x="1" y="4" width="34" height="20" rx="3" fill="#cfaf40"/><path d="M35 10h11l8 8v6H35z" fill="#e8d27a"/><rect x="40" y="12" width="7" height="5" rx="1" fill="#2a2410"/><circle cx="12" cy="26" r="4.5" fill="#111" stroke="#cfaf40" stroke-width="2"/><circle cx="45" cy="26" r="4.5" fill="#111" stroke="#cfaf40" stroke-width="2"/></svg>`;
+const trucks = [0, 1, 2, 3, 4, 5].map((i) => {
+  const d = document.createElement("div"); d.className = "truck"; d.innerHTML = truckSVG;
+  if (i === 2 || i === 3 || i === 5) d.firstChild.style.transform = "scaleX(-1)";
+  $("#trucks").appendChild(d); return d;
+});
+
+const tl = gsap.timeline({ paused: true, defaults: { ease: "power3.out" } });
+const T = { intro: 0, today: 7, read: 20, check: 34.5, route: 45.5, result: 56.5, end: 66.5, total: 75 };
+chapters(tl, [T.today, T.read, T.check, T.route, T.result, T.end], T.total);
+tl.fromTo("#chap", { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.6 }, T.today);
+tl.fromTo("#brand", { autoAlpha: 0, y: -10 }, { autoAlpha: 1, y: 0, duration: 0.8 }, 0.2);
+tl.fromTo("#grid", { x: 0, y: 0 }, { x: -64, y: -64, duration: T.total, ease: "none" }, 0);
+tl.fromTo("#glowA", { x: 0, y: 0 }, { x: 260, y: 120, duration: T.total, ease: "sine.inOut" }, 0);
+tl.fromTo("#glowB", { x: 0, y: 0 }, { x: -220, y: -80, duration: T.total, ease: "sine.inOut" }, 0);
+
+// ===== intro =====
+tl.set("#intro", { autoAlpha: 1 }, 0);
+tl.from("#intro .l1", { autoAlpha: 0, y: 40, filter: "blur(14px)", duration: 1.1 }, 0.4);
+tl.from("#intro .l2", { autoAlpha: 0, y: 40, filter: "blur(14px)", duration: 1.1 }, 1.4);
+tl.from("#wh", { autoAlpha: 0, scale: 0.8, duration: 0.9, ease: "back.out(1.6)" }, 1.0);
+["#wr1", "#wr2"].forEach((r, i) => tl.fromTo(r, { autoAlpha: 0.7, scale: 1 }, { autoAlpha: 0, scale: 1.35, duration: 2, ease: "power1.out", repeat: 2 }, 1.6 + i));
+tl.from(".origin", { autoAlpha: 0, scale: 0.6, duration: 0.5, stagger: 0.12 }, 1.8);
+$$("#routes path").forEach((p, i) => {
+  const L = p.getTotalLength(); p.style.strokeDasharray = `6 8`;
+  tl.fromTo(p, { strokeDashoffset: 0, autoAlpha: 0 }, { autoAlpha: 1, duration: 0.6 }, 2.0 + i * 0.12);
+  tl.fromTo(p, { strokeDashoffset: 0 }, { strokeDashoffset: -140, duration: 5, ease: "none" }, 2.0);
+  tl.fromTo(trucks[i], { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3 }, 2.3 + i * 0.25);
+  tl.to(trucks[i], { motionPath: { path: p, align: p, alignOrigin: [0.5, 0.5] }, duration: 2.4, ease: "power2.inOut" }, 2.3 + i * 0.25);
+  tl.to(trucks[i], { autoAlpha: 0, scale: 0.4, duration: 0.3 }, 4.6 + i * 0.25);
+  tl.fromTo("#wh", { scale: 1 }, { scale: 1.04, duration: 0.12, yoyo: true, repeat: 1, ease: "sine.inOut", immediateRender: false }, 4.6 + i * 0.25);
+});
+tl.to("#intro", { autoAlpha: 0, scale: 0.97, filter: "blur(10px)", duration: 0.7, ease: "power2.in" }, T.today - 0.7);
+
+// ===== today =====
+tl.set("#today", { autoAlpha: 1 }, T.today);
+tl.set("#dot", { autoAlpha: 0 }, T.today);
+const cards = $$(".tcard");
+cards.forEach((c, i) => {
+  const at = T.today + 0.3 + i * 2.0;
+  tl.fromTo(c, { autoAlpha: 0, y: 50, rotateX: -18 }, { autoAlpha: 1, y: 0, rotateX: 0, duration: 0.8, ease: "back.out(1.2)" }, at);
+});
+capIn(tl, "#capT", T.today + 0.4);
+// 1: PDF goes out
+tl.fromTo("#pdfOut", { x: 0, rotate: 0 }, { x: 260, rotate: 12, autoAlpha: 0, duration: 0.9, ease: "power2.in" }, T.today + 1.4);
+tl.fromTo("#pdfOut", { x: -200, autoAlpha: 0 }, { x: 0, rotate: 0, autoAlpha: 1, duration: 0.6, immediateRender: false }, T.today + 2.3);
+// 2: printer
+tl.fromTo("#printOut", { y: 120, clipPath: "inset(0% 0% 100% 0%)" }, { y: -10, clipPath: "inset(0% 0% 0% 0%)", duration: 1.4, ease: "power1.inOut" }, T.today + 2.8);
+// 3: sharpie
+reveal(tl, $$(".s3"), T.today + 4.6, 0.4, 0.3);
+// 4: flash
+tl.fromTo("#flash", { opacity: 0 }, { opacity: 0.9, duration: 0.08, yoyo: true, repeat: 1, ease: "none" }, T.today + 7.2);
+tl.fromTo("#phone", { rotate: 0 }, { rotate: -3, duration: 0.3, yoyo: true, repeat: 1, ease: "sine.inOut" }, T.today + 7.0);
+// 5: typing
+type(tl, $("#ty1"), "12", T.today + 8.8, 0.5);
+type(tl, $("#ty2"), "2", T.today + 9.5, 0.3);
+type(tl, $("#ty3"), "1 box crushd", T.today + 10.0, 1.0);
+type(tl, $("#ty4"), "3", T.today + 11.2, 0.3);
+tl.fromTo("#hours", { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5 }, T.today + 9.6);
+// travelling dot along card tops
+tl.set("#dot", { autoAlpha: 1, x: 96 + 160 }, T.today + 1.0);
+cards.forEach((c, i) => { if (i) tl.to("#dot", { x: 96 + i * 350 + 160, duration: 0.8, ease: "power2.inOut" }, T.today + 0.3 + i * 2.0); });
+tl.to("#dot", { background: "#ff6b6b", boxShadow: "0 0 16px #ff6b6b", duration: 0.3 }, T.today + 8.6);
+capOut(tl, "#capT", T.read - 0.5);
+tl.to(cards, { autoAlpha: 0, y: -30, duration: 0.45, ease: "power2.in", stagger: 0.05 }, T.read - 0.7);
+tl.to("#dot", { autoAlpha: 0, duration: 0.3 }, T.read - 0.7);
+tl.set("#today", { autoAlpha: 0 }, T.read + 0.1);
+
+// ===== read =====
+tl.set("#read", { autoAlpha: 1 }, T.read);
+tl.set(["#readp", "#recp", "#cleaned"], { autoAlpha: 0 }, T.read);
+reveal(tl, $$("#paper .sh.r"), T.read - 0.01, 0.001, 0);  // sharpie already on the photo
+tl.fromTo("#arrive", { autoAlpha: 0, y: -30 }, { autoAlpha: 1, y: 0, duration: 0.6 }, T.read);
+tl.fromTo("#photoWrap", { autoAlpha: 0, y: 60 }, { autoAlpha: 1, y: 0, duration: 0.9 }, T.read + 0.6);
+tl.fromTo("#paper", { rotationX: 22, rotationY: -10, rotationZ: -7, scale: 0.84, x: 10, y: 30, transformPerspective: 1400 }, { rotationX: 22, rotationY: -10, rotationZ: -7, scale: 0.86, duration: 1.5, ease: "sine.inOut" }, T.read + 0.6);
+tl.to("#arrive", { autoAlpha: 0, y: -20, duration: 0.4 }, T.read + 2.4);
+tl.fromTo("#detect", { autoAlpha: 0, scale: 0.8 }, { autoAlpha: 1, scale: 1, duration: 0.5, ease: "back.out(2)" }, T.read + 1.6);
+capIn(tl, "#capR1", T.read + 0.3);
+// straighten
+tl.to("#paper", { rotationX: 0, rotationY: 0, rotationZ: 0, scale: 1, x: 0, y: 0, duration: 1.4, ease: "power3.inOut" }, T.read + 3.4);
+tl.to("#glare", { autoAlpha: 0, duration: 1.2 }, T.read + 3.6);
+tl.to("#clean", { opacity: 1, duration: 1.2 }, T.read + 3.6);
+tl.to("#detect", { autoAlpha: 0, duration: 0.3 }, T.read + 3.4);
+tl.fromTo("#cleaned", { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: 0.5 }, T.read + 4.6);
+capOut(tl, "#capR1", T.read + 4.7);
+capIn(tl, "#capR2", T.read + 5.2);
+tl.fromTo("#scan", { y: 0 }, { y: 760, duration: 2.6, ease: "sine.inOut" }, T.read + 5.0);
+tl.fromTo("#readp", { autoAlpha: 0, x: 60 }, { autoAlpha: 1, x: 0, duration: 0.8 }, T.read + 5.2);
+tl.fromTo(["#b0", "#b1"], { autoAlpha: 0, scale: 1.2 }, { autoAlpha: 1, scale: 1, duration: 0.4, ease: "back.out(2)", stagger: 0.25 }, T.read + 5.6);
+tl.fromTo(["#m0", "#m1", "#m2"], { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: 0.4, stagger: 0.25 }, T.read + 5.8);
+const lrow = $$(".lrow"), rr = $$("#readp .rr");
+lrow.forEach((b, i) => {
+  const at = T.read + 6.6 + i * 0.75;
+  tl.fromTo(b, { autoAlpha: 0, scale: 1.15 }, { autoAlpha: 1, scale: 1, duration: 0.4, ease: "back.out(2)" }, at);
+  tl.fromTo(rr[i], { autoAlpha: 0, x: 30 }, { autoAlpha: 1, x: 0, duration: 0.5 }, at + 0.1);
+  const bar = $(".bar2 i", rr[i]);
+  tl.to(bar, { scaleX: +bar.dataset.v, duration: 0.8, ease: "power2.out" }, at + 0.25);
+});
+tl.fromTo(rr[4], { backgroundColor: "rgba(245,177,61,0)" }, { backgroundColor: "rgba(245,177,61,.10)", duration: 0.5, yoyo: true, repeat: 3, ease: "sine.inOut" }, T.read + 10.4);
+capOut(tl, "#capR2", T.check - 0.5);
+
+// ===== check (same scene) =====
+tl.to("#readp", { autoAlpha: 0, x: -30, duration: 0.5, ease: "power2.in" }, T.check - 0.4);
+tl.to(["#b0", "#b1", ".lrow", "#cleaned"], { autoAlpha: 0, duration: 0.4 }, T.check - 0.4);
+tl.fromTo("#recp", { autoAlpha: 0, x: 40 }, { autoAlpha: 1, x: 0, duration: 0.7 }, T.check + 0.1);
+capIn(tl, "#capC", T.check + 0.2);
+tl.fromTo("#recp .srcb", { autoAlpha: 0, x: 20 }, { autoAlpha: 1, x: 0, duration: 0.5 }, T.check + 0.6);
+$$("#recp .cr").forEach((r, i) => {
+  const at = T.check + 0.9 + i * 0.7;
+  tl.fromTo(r, { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.45 }, at);
+  tl.fromTo($(".num", r), { autoAlpha: 0, x: -20 }, { autoAlpha: 1, x: 0, duration: 0.4 }, at + 0.15);
+  tl.fromTo($(".chip", r), { autoAlpha: 0, scale: 0.6 }, { autoAlpha: 1, scale: 1, duration: 0.45, ease: "back.out(2.4)" }, at + 0.45);
+  const lb = lrow[i];
+  tl.fromTo(lb, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.2, yoyo: true, repeat: 1, immediateRender: false }, at + 0.1);
+});
+tl.fromTo("#sum .chip", { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: 0.4, stagger: 0.12 }, T.check + 4.8);
+capOut(tl, "#capC", T.route - 0.5);
+tl.to(["#photoWrap", "#recp"], { autoAlpha: 0, scale: 0.96, filter: "blur(6px)", duration: 0.55, ease: "power2.in" }, T.route - 0.6);
+tl.set("#read", { autoAlpha: 0 }, T.route + 0.1);
+
+// ===== route =====
+tl.set("#route", { autoAlpha: 1 }, T.route);
+tl.fromTo("#rules", { autoAlpha: 0, x: -60 }, { autoAlpha: 1, x: 0, duration: 0.8 }, T.route);
+tl.fromTo("#rules .rule", { autoAlpha: 0, x: -30 }, { autoAlpha: 1, x: 0, duration: 0.5, stagger: 0.1 }, T.route + 0.3);
+capIn(tl, "#capE", T.route + 0.4);
+$$(".out").forEach((o, i) => {
+  const at = T.route + 1.8 + i * 1.6;
+  tl.fromTo(`.rule[data-r="${i}"] .glow`, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3 }, at);
+  tl.to(`.rule[data-r="${i}"] .glow`, { autoAlpha: 0, duration: 0.6 }, at + 1.2);
+  tl.fromTo(o, { autoAlpha: 0, x: 80, scale: 0.96 }, { autoAlpha: 1, x: 0, scale: 1, duration: 0.7, ease: "back.out(1.4)" }, at + 0.25);
+  tl.fromTo($(".ic", o), { scale: 0.4, rotate: -20 }, { scale: 1, rotate: 0, duration: 0.6, ease: "back.out(2.5)" }, at + 0.45);
+  tl.fromTo($(".chip", o), { autoAlpha: 0, x: 20 }, { autoAlpha: 1, x: 0, duration: 0.4 }, at + 0.8);
+});
+tl.fromTo(`.rule[data-r="4"] .glow`, { autoAlpha: 0 }, { autoAlpha: 0.8, duration: 0.4, yoyo: true, repeat: 1 }, T.route + 8.4);
+capOut(tl, "#capE", T.result - 0.5);
+tl.to(["#rules", ".out"], { autoAlpha: 0, y: 30, duration: 0.5, ease: "power2.in", stagger: 0.04 }, T.result - 0.6);
+tl.set("#route", { autoAlpha: 0 }, T.result + 0.1);
+
+// ===== result =====
+tl.set("#result", { autoAlpha: 1 }, T.result);
+tl.set(["#stO", "#done"], { autoAlpha: 0 }, T.result);
+tl.fromTo("#review", { autoAlpha: 0, x: -50 }, { autoAlpha: 1, x: 0, duration: 0.8 }, T.result);
+tl.fromTo("#portal", { autoAlpha: 0, x: 50 }, { autoAlpha: 1, x: 0, duration: 0.8 }, T.result + 0.3);
+tl.fromTo("#portal .prow:not(.head)", { autoAlpha: 0, x: 30 }, { autoAlpha: 1, x: 0, duration: 0.5, stagger: 0.14 }, T.result + 0.8);
+tl.to("#ringArc", { strokeDashoffset: 113.1 * (1 - 40 / 44), duration: 1.6, ease: "power2.out" }, T.result + 0.8);
+count(tl, $("#rcv"), 0, 40, T.result + 0.8, 1.6);
+tl.to("#rdyBar", { scaleX: 0.88, duration: 1.6, ease: "power2.out" }, T.result + 0.9);
+count(tl, $("#rdy"), 0, 88, T.result + 0.9, 1.6, (v) => Math.round(v) + "%");
+capIn(tl, "#capF", T.result + 0.4);
+const yb = off($("#yes"));
+tl.fromTo("#cursor", { x: 900, y: 900, autoAlpha: 0 }, { x: yb.x + 130, y: yb.y + 34, autoAlpha: 1, duration: 1.2, ease: "power2.inOut" }, T.result + 2.6);
+tl.to("#cursor", { scale: 0.85, duration: 0.1, yoyo: true, repeat: 1 }, T.result + 3.9);
+tl.to("#yes", { scale: 0.96, duration: 0.1, yoyo: true, repeat: 1 }, T.result + 3.9);
+tl.fromTo("#done", { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.5, ease: "back.out(2)" }, T.result + 4.15);
+tl.to("#stW", { autoAlpha: 0, scale: 0.8, duration: 0.3 }, T.result + 4.4);
+tl.fromTo("#stO", { autoAlpha: 0, scale: 1.3 }, { autoAlpha: 1, scale: 1, duration: 0.5, ease: "back.out(2)" }, T.result + 4.55);
+type(tl, $("#sumRec"), "7 of 8", T.result + 4.5, 0.3);
+type(tl, $("#sumIss"), "1 short · flagged", T.result + 4.6, 0.5);
+tl.to("#ringArc", { strokeDashoffset: 113.1 * (1 - 41 / 44), duration: 0.6 }, T.result + 4.7);
+count(tl, $("#rcv"), 40, 41, T.result + 4.7, 0.6);
+tl.to("#rdyBar", { scaleX: 0.9, duration: 0.6 }, T.result + 4.7);
+count(tl, $("#rdy"), 88, 90, T.result + 4.7, 0.6, (v) => Math.round(v) + "%");
+tl.to("#cursor", { x: 300, y: 1100, autoAlpha: 0, duration: 1.2, ease: "power2.in" }, T.result + 5.6);
+capOut(tl, "#capF", T.end - 0.5);
+tl.to(["#portal", "#review"], { autoAlpha: 0, scale: 0.96, filter: "blur(6px)", duration: 0.6, ease: "power2.in" }, T.end - 0.6);
+tl.set("#result", { autoAlpha: 0 }, T.end + 0.1);
+
+// ===== end =====
+tl.set("#end", { autoAlpha: 1 }, T.end);
+tl.from("#end .big", { autoAlpha: 0, y: 40, filter: "blur(14px)", duration: 1.0 }, T.end + 0.1);
+tl.from("#end .pill, #end .arr", { autoAlpha: 0, y: 30, duration: 0.55, stagger: 0.12 }, T.end + 0.9);
+tl.from("#end .one", { autoAlpha: 0, y: 16, duration: 0.6 }, T.end + 2.2);
+tl.from("#end .need", { autoAlpha: 0, y: 20, duration: 0.7 }, T.end + 3.0);
+tl.from("#end .need .ni", { autoAlpha: 0, x: -14, duration: 0.4, stagger: 0.15 }, T.end + 3.3);
+tl.to({}, { duration: 0.01 }, T.total);
+
+// scene marks stretched to fit the narration (audio/vo-trim durations)
+M.retime(tl, [0, 7, 20, 24.9, 34.5, 45.5, 56.5, 66.5, 75], [0, 8.0, 21.0, 29.0, 38.6, 49.6, 61.9, 71.9, 80.4]);
+boot(tl);
+</script>
+</body>
+</html>

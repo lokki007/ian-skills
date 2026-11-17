@@ -1,0 +1,22 @@
+name: check
+on: [push, pull_request]
+jobs:
+  privacy-and-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Generic privacy check
+        run: bash scripts/check-private.sh
+      - name: Every skill has SKILL.md with name + description
+        run: |
+          for d in skills/*/; do
+            f="$d/SKILL.md"; test -f "$f" || { echo "missing $f"; exit 1; }
+            grep -q '^name:' "$f" && grep -q '^description:' "$f" || { echo "bad frontmatter $f"; exit 1; }
+          done
+      - name: Python compiles
+        run: find skills -name '*.py' -print0 | xargs -0 -r python3 -m py_compile
+      - name: JS parses
+        run: find skills \( -name '*.mjs' -o -name '*.js' \) -not -name '*.min.js' -print0 | xargs -0 -r -n1 node --check

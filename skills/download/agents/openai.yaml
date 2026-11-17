@@ -1,0 +1,4 @@
+interface:
+  display_name: "Download to library"
+  short_description: "Find, download, verify, and organize media or games into a local library"
+  default_prompt: "Use $download to fetch the requested title, verify it, and file it in my local library."
