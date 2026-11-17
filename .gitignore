@@ -9,3 +9,4 @@ __pycache__/
 keyword-reports/
 out/
 .DS_Store
+.local/

@@ -41,16 +41,6 @@ npx skills add lokki007/ian-skills
 
 **By hand:** copy a folder from `skills/` into `~/.claude/skills/` (Claude Code) or `~/.agents/skills/` (Codex and others).
 
-## Adding a skill (maintainers)
-
-1. Copy the skill into `skills/<name>/`.
-2. Strip anything personal: names, emails, absolute paths, hostnames, private projects and clients, keys. Credentials come from env vars only.
-3. Frontmatter: `name`, `description`, `license: MIT`.
-4. Run `bash scripts/check-private.sh`. It also reads a local, gitignored `.private-denylist` of private words (one regex per line).
-5. Add a row to the table above and an entry in `.claude-plugin/marketplace.json`.
-
-CI runs gitleaks, the generic privacy check, and syntax checks on every push.
-
 ## License
 
 MIT, see [LICENSE](LICENSE). A few bundled third-party files keep their own licenses: GSAP in `spielberg-for-suits` ([notices](skills/spielberg-for-suits/THIRD_PARTY_NOTICES.md)) and the wordfreq data in `keyword` ([notice](skills/keyword/NOTICE.md)).
