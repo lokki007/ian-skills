@@ -139,7 +139,9 @@ footer { color: var(--faint); font-size: 13px; border-top: 1px solid var(--line)
 const D = JSON.parse(document.getElementById('data').textContent);
 const A = D.analysis || {};
 const $ = (s, r = document) => r.querySelector(s);
-const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// Only http(s) links reach an href; scraped evidence can carry javascript: or data: URLs.
+const safeUrl = (u) => { try { return /^https?:$/.test(new URL(u).protocol) ? u : '#'; } catch { return '#'; } };
 const n0 = (v) => (v == null ? '–' : Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 }));
 const kfmt = (v) => (v == null ? '–' : v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : v >= 1e4 ? Math.round(v / 1e3) + 'k' : v >= 1e3 ? (v / 1e3).toFixed(1) + 'k' : String(Math.round(v)));
 const money = (v) => (v == null ? '–' : '$' + (v >= 100 ? Math.round(v) : v.toFixed(2)));
@@ -224,7 +226,7 @@ main.insertAdjacentHTML('beforeend', `<section class="hero" id="top">
     const p = pts[i]; s.querySelectorAll('circle.on').forEach((c) => c.classList.remove('on'));
     s.querySelector(`circle[data-i="${i}"]`)?.classList.add('on');
     if (mode === 'kw') { const r = p.d; ro.innerHTML = `<div class="k">${esc(r.k)}</div><dl><dt>searches/mo</dt><dd>${n0(r.v)}</dd><dt>difficulty</dt><dd>${n0(r.kd)}</dd><dt>CPC</dt><dd>${money(r.cpc)}</dd><dt>12-mo change</dt><dd>${r.chg == null ? '–' : (r.chg > 0 ? '+' : '') + r.chg + '%'}</dd><dt>intent</dt><dd>${(INTENT[r.i] || INTENT.other)[0]}</dd></dl>${r.ser?.length ? spark(r.ser, 220, 44) : ''}`; }
-    else { const c = p.d; ro.innerHTML = `<div class="k">${esc(c.term)}</div><dl><dt>keywords</dt><dd>${c.count}</dd><dt>strength</dt><dd>${c.weight}</dd></dl><div class="tags">${c.top.slice(0, 10).map((k) => `<span class="tag small">${esc(k)}</span>`).join('')}</div>`; }
+    else { const c = p.d; ro.innerHTML = `<div class="k">${esc(c.term)}</div><dl><dt>keywords</dt><dd>${esc(c.count)}</dd><dt>strength</dt><dd>${esc(c.weight)}</dd></dl><div class="tags">${c.top.slice(0, 10).map((k) => `<span class="tag small">${esc(k)}</span>`).join('')}</div>`; }
   };
   s.querySelectorAll('circle').forEach((c) => { const i = +c.dataset.i; c.addEventListener('mouseenter', () => show(i)); c.addEventListener('focus', () => show(i)); c.addEventListener('click', () => show(i)); });
   show(lab[0] ?? 0);
@@ -247,7 +249,7 @@ function spark(series, w = 70, h = 20) {
   const lvl = (x, inv) => (x ? `<span class="pill p-${/high/i.test(x) ? (inv ? 'pain' : 'high') : /med/i.test(x) ? 'med' : (inv ? 'high' : 'low')}">${esc(x)}</span>` : '');
   section('niches', 'Sub-niches', 'The pockets inside the topic, ranked by opportunity. Demand comes from search; competition from the results and the rival field.',
     `<div class="grid3">${list.map((s) => { const kws = s.keywords?.length ? s.keywords : s.cl?.top || []; const v = vol(kws); return `<article class="card">
-      <div class="row"><h3>${esc(s.name)}</h3><span class="score">${s.opportunity ?? '–'}</span></div>
+      <div class="row"><h3>${esc(s.name)}</h3><span class="score">${esc(s.opportunity ?? '–')}</span></div>
       <div class="meter"><span style="width:${Math.max(0, Math.min(100, s.opportunity || 0))}%"></span></div>
       ${s.demand || s.competition ? `<div class="tags">${s.demand ? `<span class="muted" style="font-size:12.5px">demand</span>${lvl(s.demand)}` : ''}${s.competition ? `<span class="muted" style="font-size:12.5px">competition</span>${lvl(s.competition, true)}` : ''}</div>` : ''}
       ${s.angle ? `<p style="margin:0">${esc(s.angle)}</p>` : ''}
@@ -269,9 +271,9 @@ if (A.opportunities?.length) {
   const P = A.pains || [];
   const searches = D.facets.pains.slice(0, 40);
   if (!P.length && !searches.length) return;
-  const cards = P.map((p) => `<article class="card pain"><div class="row"><h3>${esc(p.pain)}</h3><span class="sev" title="severity ${p.severity}/5">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= (p.severity || 0) ? 'on' : ''}"></i>`).join('')}</span></div>
+  const cards = P.map((p) => `<article class="card pain"><div class="row"><h3>${esc(p.pain)}</h3><span class="sev" title="severity ${esc(p.severity)}/5">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= (p.severity || 0) ? 'on' : ''}"></i>`).join('')}</span></div>
     ${p.who ? `<div class="muted" style="font-size:13px">${esc(p.who)}</div>` : ''}
-    ${(p.evidence || []).slice(0, 3).map((e) => `<blockquote>“${esc(e.quote)}”${e.url ? `<a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.source || new URL(e.url).hostname)}</a>` : ''}</blockquote>`).join('')}
+    ${(p.evidence || []).slice(0, 3).map((e) => `<blockquote>“${esc(e.quote)}”${e.url ? `<a href="${esc(safeUrl(e.url))}" target="_blank" rel="noopener">${esc(e.source || new URL(e.url).hostname)}</a>` : ''}</blockquote>`).join('')}
     ${p.idea ? `<div class="idea"><b>Answer it:</b> ${esc(p.idea)}</div>` : ''}</article>`).join('');
   section('pains', 'Pains', 'What hurts, in people’s own words, and the searches that carry the frustration.',
     `${cards ? `<div class="grid3">${cards}</div>` : ''}${searches.length ? `<div class="panel" style="margin-top:16px"><div class="eyebrow" style="margin-bottom:10px">Pain-shaped searches</div><div class="tags">${searches.map((r) => `<span class="tag" style="background:var(--pain-soft)">${esc(r.k)}</span>`).join('')}</div></div>` : ''}`);
@@ -283,14 +285,14 @@ if (A.opportunities?.length) {
   if (!keys.length) return;
   const s = section('questions', 'Questions people ask', 'Straight from autocomplete. Each one is a page, a video or an FAQ entry waiting to be written.',
     `<div class="panel"><div class="qtabs" role="group" aria-label="Question word">${keys.map((k, i) => `<button type="button" id="q-${esc(k)}" data-k="${esc(k)}" aria-pressed="${i === 0}">${esc(k)} <span class="muted mono">${Q[k].length}</span></button>`).join('')}</div><ul class="qlist" id="qlist"></ul></div>`);
-  const draw = (k) => { $('#qlist').innerHTML = Q[k].map((r) => `<li><span>${esc(r.k)}</span><span>${r.score}</span></li>`).join(''); s.querySelectorAll('.qtabs button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.k === k))); };
+  const draw = (k) => { $('#qlist').innerHTML = Q[k].map((r) => `<li><span>${esc(r.k)}</span><span>${esc(r.score)}</span></li>`).join(''); s.querySelectorAll('.qtabs button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.k === k))); };
   s.querySelectorAll('.qtabs button').forEach((b) => b.addEventListener('click', () => draw(b.dataset.k)));
   draw(keys[0]);
 })();
 
 // ---------- who and how ----------
 (() => {
-  const bars = (list, color) => { const mx = Math.max(1, ...list.map((x) => x.score || x.count)); return `<div class="bars">${list.map((x) => `<div class="bar" title="${esc((x.examples || []).join(' · '))}"><span class="t">${esc(x.name)}</span><span class="b"><span style="width:${(100 * (x.score || x.count)) / mx}%;background:${color}"></span></span><span class="n">${x.count}</span></div>`).join('')}</div>`; };
+  const bars = (list, color) => { const mx = Math.max(1, ...list.map((x) => x.score || x.count)); return `<div class="bars">${list.map((x) => `<div class="bar" title="${esc((x.examples || []).join(' · '))}"><span class="t">${esc(x.name)}</span><span class="b"><span style="width:${(100 * (x.score || x.count)) / mx}%;background:${color}"></span></span><span class="n">${esc(x.count)}</span></div>`).join('')}</div>`; };
   const aud = (A.audiences?.length ? A.audiences.map((a) => ({ name: a.name, count: a.count ?? '', score: a.score ?? 1, examples: [a.note] })) : D.facets.audiences).slice(0, 14);
   const fmt = D.facets.formats.slice(0, 14);
   if (!aud.length && !fmt.length) return;
@@ -303,7 +305,7 @@ if (A.opportunities?.length) {
   const C = A.competitors || []; const brands = D.facets.brands || []; const cmp = D.facets.comparisons.slice(0, 30);
   if (!C.length && !brands.length && !cmp.length) return;
   section('rivals', 'Competitors and comparisons', 'Who already serves this demand, and what people weigh it against.',
-    `${C.length ? `<div class="tablebox" style="margin-bottom:16px"><table><thead><tr><th>Who</th><th>Pricing</th><th>Note</th></tr></thead><tbody>${C.map((c) => `<tr><td>${c.url ? `<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.name)}</a>` : esc(c.name)}</td><td>${esc(c.pricing || '–')}</td><td style="white-space:normal">${esc(c.note || '')}</td></tr>`).join('')}</tbody></table></div>` : ''}
+    `${C.length ? `<div class="tablebox" style="margin-bottom:16px"><table><thead><tr><th>Who</th><th>Pricing</th><th>Note</th></tr></thead><tbody>${C.map((c) => `<tr><td>${c.url ? `<a href="${esc(safeUrl(c.url))}" target="_blank" rel="noopener">${esc(c.name)}</a>` : esc(c.name)}</td><td>${esc(c.pricing || '–')}</td><td style="white-space:normal">${esc(c.note || '')}</td></tr>`).join('')}</tbody></table></div>` : ''}
     ${cmp.length ? `<div class="panel"><div class="eyebrow" style="margin-bottom:10px">Comparison searches</div><div class="tags">${cmp.map((r) => `<span class="tag">${esc(r.k)}</span>`).join('')}</div></div>` : ''}`);
 })();
 
@@ -324,7 +326,7 @@ if (A.contentPlan?.length) {
 // ---------- YouTube ----------
 if (D.youtube.length) {
   section('video', 'What already wins on YouTube', 'Top videos for the seed and its strongest sub-niches. High views on a small channel mean the topic, not the creator, pulled the audience.',
-    `<div class="tablebox"><table><thead><tr><th>Video</th><th>Views</th><th>Channel subs</th><th>Published</th></tr></thead><tbody>${D.youtube.map((v) => `<tr><td style="white-space:normal;min-width:260px"><a href="${esc(v.url)}" target="_blank" rel="noopener">${esc(v.title)}</a><div class="muted" style="font-size:12.5px">${esc(v.channel || '')}</div></td><td class="num">${kfmt(v.views)}</td><td class="num">${kfmt(v.subs)}</td><td class="mono">${esc((v.published || '').slice(0, 10))}</td></tr>`).join('')}</tbody></table></div>`);
+    `<div class="tablebox"><table><thead><tr><th>Video</th><th>Views</th><th>Channel subs</th><th>Published</th></tr></thead><tbody>${D.youtube.map((v) => `<tr><td style="white-space:normal;min-width:260px"><a href="${esc(safeUrl(v.url))}" target="_blank" rel="noopener">${esc(v.title)}</a><div class="muted" style="font-size:12.5px">${esc(v.channel || '')}</div></td><td class="num">${kfmt(v.views)}</td><td class="num">${kfmt(v.subs)}</td><td class="mono">${esc((v.published || '').slice(0, 10))}</td></tr>`).join('')}</tbody></table></div>`);
 }
 
 // ---------- risks / next ----------
