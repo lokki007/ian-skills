@@ -21,12 +21,17 @@ Each skill's `SKILL.md` lists its own setup and environment variables.
 
 **Claude Code (plugin marketplace)**
 
+Install any plugin in one step (Claude Code 2.1.275+):
+
 ```
-/plugin marketplace add lokki007/ian-skills
-/plugin install edge-research@ian-skills
+/plugin install edge-research --marketplace lokki007/ian-skills
+/plugin install keyword --marketplace lokki007/ian-skills
+/plugin install download --marketplace lokki007/ian-skills
+/plugin install pareto --marketplace lokki007/ian-skills
+/plugin install spielberg-for-suits --marketplace lokki007/ian-skills
 ```
 
-Plugins: `edge-research`, `keyword`, `download`, `pareto`, `spielberg-for-suits`.
+Or add the marketplace once with `/plugin marketplace add lokki007/ian-skills`, then `/plugin install <name>@ian-skills`.
 
 **Any agent (skills CLI)**
 
